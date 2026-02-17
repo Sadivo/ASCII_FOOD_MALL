@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>★~文字迴轉壽司~★</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&family=Noto+Sans+TC:wght@400;900&display=swap');
+
+        body {
+            font-family: 'Courier Prime', 'Noto Sans TC', monospace;
+            background-color: #000;
+            color: #0f0;
+            touch-action: none;
+            user-select: none;
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        /* 標題動畫：調慢速度 + 顏色跳動 (綠/橘) */
+        @keyframes shash氣Shake {
+
+            0%,
+            100% {
+                transform: translateY(0);
+                color: #0f0;
+                text-shadow: 2px 2px #f59e0b;
+            }
+
+            25% {
+                transform: translateY(-3px);
+                color: #f59e0b;
+                text-shadow: 2px 2px #0f0;
+            }
+
+            50% {
+                transform: translateY(1px);
+                color: #0f0;
+                text-shadow: 2px 2px #f59e0b;
+            }
+
+            75% {
+                transform: translateY(-1px);
+                color: #f59e0b;
+                text-shadow: 2px 2px #0f0;
+            }
+        }
+
+        .shash氣-title {
+            font-size: 1.4rem;
+            font-weight: 900;
+            animation: shash氣Shake 1.2s steps(4) infinite;
+            letter-spacing: 1px;
+            padding: 12px 0;
+            text-align: center;
+            border-bottom: 2px double #0f0;
+            background: #000;
+        }
+
+        /* 隨機店名小招牌 - 放在指定區塊 */
+        .shop-sign {
+            font-size: 10px;
+            color: #0f0;
+            text-align: center;
+            margin-top: 10px;
+            line-height: 1.2;
+            font-weight: bold;
+            white-space: pre;
+        }
+
+        .border-ascii {
+            border: 1px solid #0f0;
+            position: relative;
+        }
+
+        .conveyor-belt {
+            border-top: 2px dashed #0f0;
+            border-bottom: 2px dashed #0f0;
+            height: 50px;
+            position: relative;
+        }
+
+        .plate-on-belt {
+            position: absolute;
+            top: 5px;
+            padding: 2px 8px;
+            border: 1px solid #0f0;
+            background: #000;
+            font-size: 0.75rem;
+            white-space: nowrap;
+            z-index: 5;
+        }
+
+        .cutting-board {
+            width: 220px;
+            height: 100px;
+            border: 2px solid #0f0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            background: #050505;
+        }
+
+        .draggable-item {
+            cursor: pointer;
+            border: 1px solid #0f0;
+            padding: 4px 8px;
+            margin: 2px;
+            background: #000;
+            display: inline-block;
+            text-align: center;
+        }
+
+        .order-bubble {
+            position: absolute;
+            top: -85px;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 1px solid #fff;
+            color: #fff;
+            padding: 4px 10px;
+            font-size: 0.75rem;
+            opacity: 0;
+            background: #000;
+            z-index: 50;
+            white-space: nowrap;
+        }
+
+        .drag-proxy {
+            position: fixed;
+            pointer-events: none;
+            z-index: 9999;
+            border: 1px solid #ff0;
+            color: #ff0;
+            background: #000;
+            padding: 4px 12px;
+            display: none;
+            transform: translate(-50%, -50%);
+            font-weight: bold;
+        }
+
+        .score-board {
+            font-size: 0.8rem;
+            padding: 5px 10px;
+            border-bottom: 1px double #0f0;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .fryer-oil {
+            background: #1a1a1a;
+            height: 40%;
+            width: 100%;
+            position: absolute;
+            bottom: 0;
+            border-top: 1px solid #333;
+        }
+
+        .customer-ascii {
+            font-size: 1.2rem;
+            color: #0f0;
+            opacity: 0.1;
+            transition: all 0.3s;
+        }
+
+        .customer-active {
+            opacity: 1;
+        }
+
+        .fullness-bar {
+            font-size: 8px;
+            color: #0c0;
+            margin-top: 2px;
+        }
+
+        .hint-text {
+            font-size: 13px;
+            color: #f59e0b;
+            text-align: center;
+            margin: 4px 0;
+            line-height: 1.4;
+            opacity: 0.8;
+        }
+
+        /* 煙霧粒子動畫 */
+        .smoke-particle {
+            position: fixed;
+            pointer-events: none;
+            font-size: 12px;
+            color: #999;
+            z-index: 10000;
+            animation: smokeFloat 0.8s ease-out forwards;
+        }
+
+        @keyframes smokeFloat {
+            0% {
+                transform: translate(0, 0) scale(1);
+                opacity: 0.8;
+            }
+
+            100% {
+                transform: translate(var(--dx), -50px) scale(1.5);
+                opacity: 0;
+            }
+        }
+    </style>
+</head>
+
+<body class="flex flex-col">
+
+    <div class="shash氣-title" style="position:relative;">
+        <a href="index.html"
+            style="position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:11px;color:#0f0;text-decoration:none;border:1px solid #0f0;padding:2px 8px;">⬅
+            大廳</a>
+        ~.:: 文字迴轉壽司 ::.~
+    </div>
+
+    <div class="score-board">
+        <span>[ 積分: <span id="score-val">0000</span> ]</span>
+        <span>[ 總出餐: <span id="total-serve">00</span> ]</span>
+    </div>
+
+    <!-- 客人座席區 -->
+    <div class="h-1/3 flex flex-col justify-end bg-black">
+
+        <!-- 方框小招牌區 -->
+        <div id="random-shop-sign" class="shop-sign"></div>
+
+        <div class="flex justify-around items-end px-4 pb-4 mt-2">
+            <div id="seat-0" class="relative flex flex-col items-center">
+                <div class="order-bubble"></div>
+                <div class="customer-ascii">( _ _ )</div>
+                <div class="fullness-bar">[---------]</div>
+            </div>
+            <div id="seat-1" class="relative flex flex-col items-center">
+                <div class="order-bubble"></div>
+                <div class="customer-ascii">( _ _ )</div>
+                <div class="fullness-bar">[---------]</div>
+            </div>
+            <div id="seat-2" class="relative flex flex-col items-center">
+                <div class="order-bubble"></div>
+                <div class="customer-ascii">( _ _ )</div>
+                <div class="fullness-bar">[---------]</div>
+            </div>
+        </div>
+        <div id="belt-area" class="conveyor-belt">
+            <div class="absolute top-0 left-0 w-full text-[8px] opacity-20 select-none">
+                >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>></div>
+        </div>
+    </div>
+
+    <div class="flex-1 flex flex-col items-center justify-start p-2">
+        <div class="hint-text">
+            <div class="text-[#0f0]">【 製作秘籍 】</div>
+            壽司:配料+飯 | 刺身:單純配料 | 手捲:飯+海苔+配料 | 丼:配料+飯x3<br>
+            <span class="text-[#ff4444]">!! 禁忌 !! 玉子不可做成刺身、不可油炸、不可火烤</span>
+        </div>
+
+        <div class="flex items-center justify-between w-full max-w-xl mt-2">
+            <div class="flex flex-col items-center space-y-4">
+                <div class="border-ascii p-2 flex flex-col space-y-1">
+                    <div class="draggable-item text-[11px]" data-type="rice" data-val="飯">[ 醋飯 ]</div>
+                    <div class="draggable-item text-[11px]" data-type="nori" data-val="海苔">[ 海苔 ]</div>
+                </div>
+                <div id="target-plates"
+                    class="border-ascii w-16 h-12 flex items-center justify-center text-[10px] text-center text-green-500">
+                    [[ 出餐 ]]
+                </div>
+            </div>
+
+            <div id="drop-board" class="cutting-board">
+                <div id="slot-topping" class="text-2xl font-black"></div>
+                <div id="slot-rice" class="text-xs mt-1"></div>
+                <div id="slot-nori" class="text-xs"></div>
+                <div id="combined-sushi" class="draggable-item absolute inset-0 opacity-0 cursor-pointer"
+                    data-type="final-sushi"></div>
+            </div>
+
+            <div class="flex flex-col space-y-2">
+                <div class="grid grid-cols-2 gap-1 border-ascii p-1">
+                    <div class="draggable-item text-[11px]" data-type="topping" data-val="鮪魚">鮪魚</div>
+                    <div class="draggable-item text-[11px]" data-type="topping" data-val="鮭魚">鮭魚</div>
+                    <div class="draggable-item text-[11px]" data-type="topping" data-val="海老">海老</div>
+                    <div class="draggable-item text-[11px]" data-type="topping" data-val="玉子">玉子</div>
+                </div>
+
+                <div id="target-fryer"
+                    class="border-ascii h-10 flex items-center justify-center text-[11px] relative overflow-hidden">
+                    <div class="fryer-oil"></div>
+                    <span class="z-10">[ 炸鍋 ]</span>
+                </div>
+
+                <div class="draggable-item text-center text-[11px]" data-type="torch" data-val="火槍">[ 火槍 ]</div>
+
+                <div class="border-ascii p-1 flex flex-col items-center">
+                    <input type="text" id="custom-text" placeholder="自訂"
+                        class="bg-black border-b border-green-900 text-[11px] w-12 outline-none text-green-500 mb-1 text-center">
+                    <div class="draggable-item text-[10px] w-full" data-type="topping" data-val="custom">使用</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="drag-proxy" class="drag-proxy"></div>
+
+    <script>
+        const beltArea = document.getElementById('belt-area');
+        const board = document.getElementById('drop-board');
+        const fryer = document.getElementById('target-fryer');
+        const platesZone = document.getElementById('target-plates');
+        const proxy = document.getElementById('drag-proxy');
+        const scoreEl = document.getElementById('score-val');
+        const serveCountEl = document.getElementById('total-serve');
+        const combinedSushi = document.getElementById('combined-sushi');
+        const signEl = document.getElementById('random-shop-sign');
+
+        let score = 0;
+        let serveCount = 0;
+        let plates = [];
+        let isDragging = false;
+        let dragInfo = { type: '', val: '' };
+        let state = { nori: false, riceCount: 0, topping: null };
+        let torchProgress = 0;
+        let lastX = 0;
+
+        // 煞氣但更像店名的清單
+        const shopNames = [
+            "魚 葬 ‧ 鮮 魚 處",
+            "炙 魂 ． 鮨 屋",
+            "三 途 川 迴 轉 壽 司",
+            "刃 之 魚 生 專 門",
+            "冥 府 ． 握 壽 司"
+        ];
+
+        const customerPool = [
+            "( ^_^ )", "( o_o )", "( >_< )", "( -_- )",
+            "( *_* )", "( @.@ )", "( ^ω^ )", "( •̀ω•́ )"
+        ];
+
+        let seats = [
+            { id: 0, active: false, currentOrder: null, eaten: 0, capacity: 4, isEating: false },
+            { id: 1, active: false, currentOrder: null, eaten: 0, capacity: 4, isEating: false },
+            { id: 2, active: false, currentOrder: null, eaten: 0, capacity: 4, isEating: false }
+        ];
+
+        function init() {
+            // 隨機店名招牌渲染
+            const randomName = shopNames[Math.floor(Math.random() * shopNames.length)];
+            const paddedName = ` ${randomName} `;
+            const len = paddedName.length * 2; // 粗略計算長度
+            const borderLine = "+" + "-".repeat(16) + "+";
+            signEl.innerText = `${borderLine}\n|${paddedName}|\n${borderLine}`;
+
+            setupPointerEvents();
+            requestAnimationFrame(gameLoop);
+            setInterval(manageSeats, 4000);
+            addPlateToBelt('鮭魚刺身', window.innerWidth * 0.4);
+        }
+
+        function createSmoke(x, y) {
+            const smoke = document.createElement('div');
+            smoke.className = 'smoke-particle';
+            smoke.innerText = '煙';
+            smoke.style.left = x + 'px';
+            smoke.style.top = y + 'px';
+            const dx = (Math.random() - 0.5) * 40;
+            smoke.style.setProperty('--dx', dx + 'px');
+            document.body.appendChild(smoke);
+            setTimeout(() => smoke.remove(), 800);
+        }
+
+        function manageSeats() {
+            seats.forEach(seat => {
+                if (!seat.active && Math.random() > 0.4) {
+                    seat.active = true;
+                    seat.eaten = 0;
+                    seat.capacity = 3 + Math.floor(Math.random() * 5);
+                    const el = document.getElementById(`seat-${seat.id}`);
+                    const asciiEl = el.querySelector('.customer-ascii');
+                    asciiEl.innerText = customerPool[Math.floor(Math.random() * customerPool.length)];
+                    asciiEl.classList.add('customer-active');
+                    updateSeatBehavior(seat);
+                    updateFullnessBar(seat);
+                } else if (seat.active && !seat.isEating && !seat.currentOrder) {
+                    updateSeatBehavior(seat);
+                }
+            });
+        }
+
+        function updateFullnessBar(seat) {
+            const el = document.getElementById(`seat-${seat.id}`);
+            const bar = el.querySelector('.fullness-bar');
+            if (!seat.active) {
+                bar.innerText = "[---------]";
+                return;
+            }
+            const filled = Math.min(9, Math.floor((seat.eaten / seat.capacity) * 9));
+            bar.innerText = "[" + "#".repeat(filled) + "-".repeat(9 - filled) + "]";
+        }
+
+        function updateSeatBehavior(seat) {
+            if (!seat.currentOrder && Math.random() > 0.2) {
+                const bases = ['鮪魚', '鮭魚', '海老', '玉子'];
+                const b = bases[Math.floor(Math.random() * bases.length)];
+                let prefix = "";
+                if (b !== '玉子') {
+                    if (Math.random() < 0.25) prefix = "炸";
+                    else if (Math.random() < 0.25) prefix = "炙燒";
+                }
+                const name = prefix + b;
+                const r = Math.random();
+                if (r < 0.4) seat.currentOrder = name + '壽司';
+                else if (r < 0.6 && b !== '玉子') seat.currentOrder = name + '刺身';
+                else if (r < 0.8) seat.currentOrder = name + '手捲';
+                else seat.currentOrder = name + '丼';
+            }
+            refreshBubble(seat);
+        }
+
+        function refreshBubble(seat) {
+            const el = document.getElementById(`seat-${seat.id}`);
+            const bubble = el.querySelector('.order-bubble');
+            if (seat.currentOrder) {
+                bubble.style.opacity = "1";
+                bubble.innerText = `[ 想吃: ${seat.currentOrder} ]`;
+            } else {
+                bubble.style.opacity = "0";
+            }
+        }
+
+        function setupPointerEvents() {
+            document.addEventListener('pointerdown', (e) => {
+                const target = e.target.closest('.draggable-item');
+                if (!target) return;
+                isDragging = true;
+                target.releasePointerCapture(e.pointerId);
+                let val = target.getAttribute('data-val');
+                if (val === 'custom') val = document.getElementById('custom-text').value || '???';
+                if (target.id === 'combined-sushi') {
+                    if (state.riceCount >= 3) val = state.topping + '丼';
+                    else if (state.nori && state.riceCount > 0) val = state.topping + '手捲';
+                    else if (state.riceCount > 0) val = state.topping + '壽司';
+                    else val = state.topping + '刺身';
+                }
+                dragInfo = { type: target.getAttribute('data-type'), val: val };
+                proxy.style.display = 'block';
+                proxy.innerText = (dragInfo.type === 'torch') ? "== 火 炎 ==" : `[ ${dragInfo.val} ]`;
+                lastX = e.clientX;
+                updateProxy(e);
+            });
+
+            window.addEventListener('pointermove', (e) => {
+                if (!isDragging) return;
+                updateProxy(e);
+                if (dragInfo.type === 'torch' && isOver(e, board)) {
+                    if (state.topping && state.topping !== '玉子' && !state.topping.includes('炸') && !state.topping.includes('炙燒')) {
+                        if (Math.random() > 0.6) {
+                            createSmoke(e.clientX, e.clientY);
+                        }
+
+                        torchProgress += Math.abs(e.clientX - lastX) + 2;
+                        if (torchProgress > 220) {
+                            state.topping = '炙燒' + state.topping;
+                            updateBoard();
+                            torchProgress = -9999;
+                        }
+                    }
+                }
+                lastX = e.clientX;
+            });
+
+            window.addEventListener('pointerup', (e) => {
+                if (!isDragging) return;
+                isDragging = false;
+                proxy.style.display = 'none';
+                if (isOver(e, fryer) && dragInfo.type === 'topping') {
+                    if (dragInfo.val !== '玉子' && !dragInfo.val.includes('炸') && !dragInfo.val.includes('炙燒')) {
+                        state.topping = '炸' + dragInfo.val;
+                        updateBoard();
+                    }
+                } else if (isOver(e, board)) {
+                    if (dragInfo.type === 'nori') state.nori = true;
+                    if (dragInfo.type === 'rice') state.riceCount++;
+                    else if (dragInfo.type === 'topping') { state.topping = dragInfo.val; torchProgress = 0; }
+                    updateBoard();
+                } else if (isOver(e, platesZone) && dragInfo.type === 'final-sushi') {
+                    addPlateToBelt(dragInfo.val);
+                    state.nori = false; state.riceCount = 0; state.topping = null;
+                    updateBoard();
+                    serveCount++;
+                    serveCountEl.innerText = String(serveCount).padStart(2, '0');
+                }
+            });
+        }
+
+        function updateProxy(e) {
+            proxy.style.left = e.clientX + 'px';
+            proxy.style.top = e.clientY + 'px';
+        }
+
+        function isOver(e, el) {
+            const r = el.getBoundingClientRect();
+            return e.clientX > r.left - 20 && e.clientX < r.right + 20 && e.clientY > r.top - 20 && e.clientY < r.bottom + 20;
+        }
+
+        function updateBoard() {
+            document.getElementById('slot-nori').innerText = state.nori ? "《海苔》" : "";
+            document.getElementById('slot-rice').innerText = state.riceCount > 0 ? `《醋飯x${state.riceCount}》` : "";
+            const tEl = document.getElementById('slot-topping');
+            tEl.innerText = state.topping || "";
+            if (state.topping && (state.topping.includes('炙燒') || state.topping.includes('炸'))) tEl.style.color = "#f59e0b";
+            else tEl.style.color = "#0f0";
+            let canCombine = !!state.topping;
+            if (state.topping === '玉子' && state.riceCount === 0) canCombine = false;
+            combinedSushi.style.display = canCombine ? "block" : "none";
+        }
+
+        function addPlateToBelt(fullName, customX = null) {
+            const p = {
+                fullName,
+                x: customX !== null ? customX : window.innerWidth,
+                el: document.createElement('div'),
+                laps: 0
+            };
+            p.el.className = 'plate-on-belt';
+            p.el.innerText = `[${fullName}]`;
+            beltArea.appendChild(p.el);
+            plates.push(p);
+        }
+
+        function gameLoop() {
+            plates.forEach((p, i) => {
+                p.x -= 1.35;
+                if (p.x < -180) {
+                    p.x = window.innerWidth + 20;
+                    p.laps++;
+                }
+                p.el.style.left = p.x + 'px';
+
+                seats.forEach(seat => {
+                    if (!seat.active || seat.isEating) return;
+                    const seatEl = document.getElementById(`seat-${seat.id}`);
+                    const seatRect = seatEl.getBoundingClientRect();
+                    const seatX = seatRect.left + (seatRect.width / 2);
+                    const isNear = Math.abs((p.x + 40) - seatX) < 30;
+
+                    if (isNear) {
+                        let grabChance = 0.001;
+                        if (p.laps >= 2) {
+                            grabChance = 0.03 + ((p.laps - 2) * 0.05);
+                        }
+
+                        if (seat.currentOrder && p.fullName === seat.currentOrder) {
+                            eatSushi(seat, p, i, true);
+                        } else if (Math.random() < grabChance) {
+                            eatSushi(seat, p, i, false);
+                        }
+                    }
+                });
+            });
+            requestAnimationFrame(gameLoop);
+        }
+
+        function eatSushi(seat, plate, idx, wasTarget) {
+            const el = document.getElementById(`seat-${seat.id}`);
+            const bubble = el.querySelector('.order-bubble');
+            const asciiEl = el.querySelector('.customer-ascii');
+            const oldFace = asciiEl.innerText;
+
+            seat.isEating = true;
+            plate.el.remove();
+            plates.splice(idx, 1);
+            seat.eaten++;
+
+            updateFullnessBar(seat);
+
+            const positiveTalk = ["(☆▽☆) 職人之味！", "(*´∀｀*) 喔喔!這組合!", "(๑´ڡ`๑) 太神啦!", "( •̀ω•́ ) 此生無憾"];
+            const randomTalk = ["(・_・) 雖然不是點這個...", "(￣.￣) 嘛,加減吃", "(´・ω・`) 肚子餓什麼都好"];
+
+            score += wasTarget ? 300 : 100;
+            scoreEl.innerText = String(score).padStart(4, '0');
+
+            bubble.style.opacity = "1";
+            bubble.innerText = wasTarget ? positiveTalk[Math.floor(Math.random() * positiveTalk.length)] : randomTalk[Math.floor(Math.random() * randomTalk.length)];
+            asciiEl.innerText = wasTarget ? "(≧▽≦)" : "(・ε・)";
+
+            if (wasTarget) seat.currentOrder = null;
+
+            setTimeout(() => {
+                if (seat.eaten >= seat.capacity) {
+                    bubble.innerText = "(*ﾟ∀ﾟ) 飽了，多謝款待";
+                    setTimeout(() => {
+                        bubble.style.opacity = "0";
+                        asciiEl.innerText = "( _ _ )";
+                        asciiEl.classList.remove('customer-active');
+                        seat.active = false;
+                        seat.isEating = false;
+                        updateFullnessBar(seat);
+                    }, 1200);
+                } else {
+                    seat.isEating = false;
+                    asciiEl.innerText = oldFace;
+                    refreshBubble(seat);
+                }
+            }, 1200);
+        }
+
+        init();
+    </script>
+</body>
+
+</html>

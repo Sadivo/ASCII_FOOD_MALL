@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>黄泉亭 — 居酒屋</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&family=Noto+Sans+TC:wght@400;900&display=swap');
+
+        body {
+            font-family: 'Courier Prime', 'Noto Sans TC', monospace;
+            background-color: #000;
+            color: #0f0;
+            touch-action: none;
+            user-select: none;
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        @keyframes titleShake {
+
+            0%,
+            100% {
+                transform: translateY(0);
+                color: #0f0;
+                text-shadow: 2px 2px #f59e0b;
+            }
+
+            25% {
+                transform: translateY(-3px);
+                color: #f59e0b;
+                text-shadow: 2px 2px #0f0;
+            }
+
+            50% {
+                transform: translateY(1px);
+                color: #0f0;
+                text-shadow: 2px 2px #f59e0b;
+            }
+
+            75% {
+                transform: translateY(-1px);
+                color: #f59e0b;
+                text-shadow: 2px 2px #0f0;
+            }
+        }
+
+        .page-title {
+            font-size: 1.4rem;
+            font-weight: 900;
+            animation: titleShake 1.2s steps(4) infinite;
+            letter-spacing: 1px;
+            padding: 12px 0;
+            text-align: center;
+            border-bottom: 2px double #0f0;
+            background: #000;
+        }
+
+        .shop-sign {
+            font-size: 10px;
+            color: #0f0;
+            text-align: center;
+            margin-top: 10px;
+            line-height: 1.2;
+            font-weight: bold;
+            white-space: pre;
+        }
+
+        .back-btn {
+            position: absolute;
+            left: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 11px;
+            color: #0f0;
+            cursor: pointer;
+            text-decoration: none;
+            border: 1px solid #0f0;
+            padding: 2px 8px;
+            z-index: 20;
+        }
+
+        .back-btn:hover {
+            color: #f59e0b;
+            border-color: #f59e0b;
+        }
+
+        .score-board {
+            font-size: 0.8rem;
+            padding: 5px 10px;
+            border-bottom: 1px double #0f0;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .customer-ascii {
+            font-size: 1.2rem;
+            color: #0f0;
+            opacity: 0.1;
+            transition: all 0.3s;
+        }
+
+        .customer-active {
+            opacity: 1;
+        }
+
+        .fullness-bar {
+            font-size: 8px;
+            color: #0c0;
+            margin-top: 2px;
+        }
+
+        .order-bubble {
+            position: absolute;
+            top: -50px;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 1px solid #fff;
+            color: #fff;
+            padding: 4px 10px;
+            font-size: 0.7rem;
+            opacity: 0;
+            background: #000;
+            z-index: 50;
+            white-space: nowrap;
+        }
+
+        .hint-text {
+            font-size: 13px;
+            color: #f59e0b;
+            text-align: center;
+            margin: 4px 0;
+            line-height: 1.4;
+            opacity: 0.8;
+        }
+
+        /* Counter bar */
+        .counter-bar {
+            border-top: 2px dashed #0f0;
+            border-bottom: 2px dashed #0f0;
+            height: 28px;
+            position: relative;
+            background: #020;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 8px;
+            opacity: 0.3;
+            overflow: hidden;
+        }
+
+        .border-ascii {
+            border: 1px solid #0f0;
+            position: relative;
+        }
+
+        .draggable-item {
+            cursor: pointer;
+            border: 1px solid #0f0;
+            padding: 4px 8px;
+            margin: 2px;
+            background: #000;
+            display: inline-block;
+            text-align: center;
+        }
+
+        .drag-proxy {
+            position: fixed;
+            pointer-events: none;
+            z-index: 9999;
+            border: 1px solid #ff0;
+            color: #ff0;
+            background: #000;
+            padding: 4px 12px;
+            display: none;
+            transform: translate(-50%, -50%);
+            font-weight: bold;
+        }
+
+        /* Grill */
+        .grill-area {
+            width: 280px;
+            border: 2px solid #f59e0b;
+            background: #0a0500;
+            position: relative;
+            padding: 8px;
+        }
+
+        .grill-fire {
+            font-size: 8px;
+            text-align: center;
+            color: #f44;
+            letter-spacing: 3px;
+            animation: fireFlicker 0.4s steps(2) infinite;
+        }
+
+        @keyframes fireFlicker {
+            0% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.5;
+            }
+        }
+
+        .skewer-slot {
+            border: 1px dashed #333;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            margin: 3px 0;
+            position: relative;
+            cursor: pointer;
+        }
+
+        .skewer-slot .timer-bar {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            height: 3px;
+            background: #0f0;
+            transition: width 0.1s, background 0.3s;
+        }
+
+        /* Drink mixing */
+        .cup-area {
+            width: 100px;
+            height: 90px;
+            border: 2px solid #0f0;
+            border-radius: 0 0 10px 10px;
+            background: #020;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-end;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .cup-fill {
+            width: 100%;
+            transition: height 0.3s, background 0.3s;
+            position: absolute;
+            bottom: 0;
+            border-radius: 0 0 8px 8px;
+        }
+
+        .cup-label {
+            position: relative;
+            z-index: 5;
+            font-size: 10px;
+            text-align: center;
+            padding: 4px;
+            color: #fff;
+        }
+
+        /* Smoke from grill */
+        .grill-smoke {
+            position: fixed;
+            pointer-events: none;
+            font-size: 10px;
+            color: #555;
+            z-index: 10000;
+            animation: grillSmokeUp 1s ease-out forwards;
+        }
+
+        @keyframes grillSmokeUp {
+            0% {
+                transform: translateY(0);
+                opacity: 0.7;
+            }
+
+            100% {
+                transform: translateY(-40px);
+                opacity: 0;
+            }
+        }
+    </style>
+</head>
+
+<body class="flex flex-col">
+
+    <div class="page-title relative">
+        <a href="index.html" class="back-btn">⬅ 大廳</a>
+        ~.:: 文字居酒屋 ::.~
+    </div>
+
+    <div class="score-board">
+        <span>[ 積分: <span id="score-val">0000</span> ]</span>
+        <span>[ 出餐: <span id="total-serve">00</span> ]</span>
+    </div>
+
+    <!-- Customer Area -->
+    <div class="flex flex-col justify-end bg-black">
+
+        <!-- 方框小招牌區 -->
+        <div id="random-shop-sign" class="shop-sign"></div>
+
+        <div class="flex justify-around items-end px-4 pb-4 mt-2">
+            <div id="seat-0" class="relative flex flex-col items-center">
+                <div class="order-bubble"></div>
+                <div class="customer-ascii">( _ _ )</div>
+                <div class="fullness-bar">[---------]</div>
+            </div>
+            <div id="seat-1" class="relative flex flex-col items-center">
+                <div class="order-bubble"></div>
+                <div class="customer-ascii">( _ _ )</div>
+                <div class="fullness-bar">[---------]</div>
+            </div>
+            <div id="seat-2" class="relative flex flex-col items-center">
+                <div class="order-bubble"></div>
+                <div class="customer-ascii">( _ _ )</div>
+                <div class="fullness-bar">[---------]</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Counter Bar -->
+    <div class="counter-bar">
+        ═══════════╬═══════════╬═══════════╬═══════════╬═══════════╬═══════════╬═══════════╬═══════════</div>
+
+    <div class="hint-text">
+        <div class="text-[#0f0]">【 黄泉秘傳 】</div>
+        串燒：拖到烤架 → 點擊翻面 → 烤好拖到出餐 | 飲料：拖到杯中 → 直接出餐<br>
+        <span class="text-[#ff4444]">!! 串燒不翻面會燒焦！翻太早會不熟 !!</span>
+    </div>
+
+    <div class="flex-1 flex items-start justify-center p-2 gap-3 mt-1">
+
+        <!-- Left: Drinks -->
+        <div class="flex flex-col items-center space-y-2">
+            <div class="border-ascii p-2 flex flex-col space-y-1">
+                <div class="text-[10px] text-center text-[#f59e0b]">【飲料】</div>
+                <div class="draggable-item text-[11px]" data-type="drink" data-val="啤酒">🍺 啤酒</div>
+                <div class="draggable-item text-[11px]" data-type="drink" data-val="清酒">🍶 清酒</div>
+                <div class="draggable-item text-[11px]" data-type="drink" data-val="梅酒">🍷 梅酒</div>
+                <div class="draggable-item text-[11px]" data-type="drink" data-val="Highball">🥃 Highball</div>
+            </div>
+
+            <div id="drop-cup" class="cup-area">
+                <div id="cup-fill" class="cup-fill" style="height:0; background:#0000"></div>
+                <div id="cup-label" class="cup-label"></div>
+            </div>
+
+            <div id="serve-drink"
+                class="border-ascii w-16 h-8 flex items-center justify-center text-[9px] cursor-pointer">
+                [出飲料]
+            </div>
+        </div>
+
+        <!-- Center: Grill -->
+        <div class="flex flex-col items-center space-y-2">
+            <div class="grill-area">
+                <div class="grill-fire">🔥🔥🔥🔥🔥🔥🔥🔥🔥</div>
+                <div id="skewer-0" class="skewer-slot" data-slot="0">[ 空烤位 ]<div class="timer-bar" style="width:0">
+                    </div>
+                </div>
+                <div id="skewer-1" class="skewer-slot" data-slot="1">[ 空烤位 ]<div class="timer-bar" style="width:0">
+                    </div>
+                </div>
+                <div id="skewer-2" class="skewer-slot" data-slot="2">[ 空烤位 ]<div class="timer-bar" style="width:0">
+                    </div>
+                </div>
+                <div class="grill-fire">🔥🔥🔥🔥🔥🔥🔥🔥🔥</div>
+            </div>
+
+            <div id="serve-skewer"
+                class="border-ascii px-4 h-8 flex items-center justify-center text-[9px] cursor-pointer">
+                [出串燒]
+            </div>
+        </div>
+
+        <!-- Right: Skewer items -->
+        <div class="flex flex-col items-center space-y-2">
+            <div class="border-ascii p-2 flex flex-col space-y-1">
+                <div class="text-[10px] text-center text-[#f59e0b]">【串燒】</div>
+                <div class="draggable-item text-[11px]" data-type="skewer" data-val="雞皮">雞皮</div>
+                <div class="draggable-item text-[11px]" data-type="skewer" data-val="豬五花">豬五花</div>
+                <div class="draggable-item text-[11px]" data-type="skewer" data-val="牛舌">牛舌</div>
+                <div class="draggable-item text-[11px]" data-type="skewer" data-val="蔥鹽">蔥鹽</div>
+            </div>
+        </div>
+    </div>
+
+    <div id="drag-proxy" class="drag-proxy"></div>
+
+    <script>
+        const proxy = document.getElementById('drag-proxy');
+        const scoreEl = document.getElementById('score-val');
+        const serveCountEl = document.getElementById('total-serve');
+        const cup = document.getElementById('drop-cup');
+        const cupFill = document.getElementById('cup-fill');
+        const cupLabel = document.getElementById('cup-label');
+        const serveDrink = document.getElementById('serve-drink');
+        const serveSkewer = document.getElementById('serve-skewer');
+
+        let score = 0, serveCount = 0, isDragging = false;
+        let dragInfo = { type: '', val: '' };
+
+        const drinkColors = { '啤酒': '#daa520', '清酒': '#e0e0d0', '梅酒': '#8b0000', 'Highball': '#c8a24e' };
+
+        let cupState = { drink: null };
+
+        // Grill slots
+        let grillSlots = [
+            { name: null, timer: 0, flipped: false, done: false, burned: false },
+            { name: null, timer: 0, flipped: false, done: false, burned: false },
+            { name: null, timer: 0, flipped: false, done: false, burned: false }
+        ];
+
+        const signEl = document.getElementById('random-shop-sign');
+
+        const shopNames = [
+            "黄 泉 亭 ‧ 本 店",
+            "冥 府 ‧ 串 燒 處",
+            "鬼 灯 居 酒 屋",
+            "三 途 酒 場",
+            "奈 落 ‧ 炭 火 亭"
+        ];
+
+        const customerPool = [
+            "( ^_^ )", "( o_o )", "( >_< )", "( -_- )",
+            "( *_* )", "( @.@ )", "( ^ω^ )", "( •̀ω•́ )"
+        ];
+
+        let seats = [
+            { id: 0, active: false, currentOrder: null, eaten: 0, capacity: 4, isEating: false },
+            { id: 1, active: false, currentOrder: null, eaten: 0, capacity: 4, isEating: false },
+            { id: 2, active: false, currentOrder: null, eaten: 0, capacity: 4, isEating: false }
+        ];
+
+        function init() {
+            // 隨機店名招牌渲染
+            const randomName = shopNames[Math.floor(Math.random() * shopNames.length)];
+            const paddedName = ` ${randomName} `;
+            const borderLine = "+" + "-".repeat(16) + "+";
+            signEl.innerText = `${borderLine}\n|${paddedName}|\n${borderLine}`;
+
+            setupPointerEvents();
+            setupGrillClicks();
+            setInterval(manageSeats, 4000);
+            setInterval(updateGrill, 100);
+        }
+
+        function setupGrillClicks() {
+            for (let i = 0; i < 3; i++) {
+                document.getElementById(`skewer-${i}`).addEventListener('click', () => flipSkewer(i));
+            }
+
+            serveDrink.addEventListener('click', () => {
+                if (!cupState.drink) return;
+                serveTo(cupState.drink, 'drink');
+                cupState.drink = null;
+                cupFill.style.height = '0';
+                cupLabel.innerText = '';
+            });
+
+            serveSkewer.addEventListener('click', () => {
+                // Serve all done skewers
+                for (let i = 0; i < 3; i++) {
+                    const s = grillSlots[i];
+                    if (s.name && (s.done || s.burned)) {
+                        let name = s.burned ? '焦' + s.name : s.name;
+                        serveTo(name, 'skewer');
+                        s.name = null; s.timer = 0; s.flipped = false;
+                        s.done = false; s.burned = false;
+                        updateSlotUI(i);
+                    }
+                }
+            });
+        }
+
+        function flipSkewer(i) {
+            const s = grillSlots[i];
+            if (!s.name || s.done || s.burned) return;
+            s.flipped = true;
+            updateSlotUI(i);
+
+            // Create smoke
+            const el = document.getElementById(`skewer-${i}`);
+            const rect = el.getBoundingClientRect();
+            const smoke = document.createElement('div');
+            smoke.className = 'grill-smoke';
+            smoke.innerText = '嗞~';
+            smoke.style.left = (rect.left + rect.width / 2) + 'px';
+            smoke.style.top = rect.top + 'px';
+            document.body.appendChild(smoke);
+            setTimeout(() => smoke.remove(), 1000);
+        }
+
+        function updateGrill() {
+            for (let i = 0; i < 3; i++) {
+                const s = grillSlots[i];
+                if (!s.name || s.done || s.burned) continue;
+                s.timer += 1;
+
+                const pct = Math.min(100, (s.timer / 80) * 100);
+                const bar = document.getElementById(`skewer-${i}`).querySelector('.timer-bar');
+                bar.style.width = pct + '%';
+
+                if (pct >= 100 && !s.flipped) {
+                    s.burned = true;
+                    bar.style.background = '#555';
+                    updateSlotUI(i);
+                } else if (pct >= 50 && s.flipped && pct < 100) {
+                    bar.style.background = '#0f0';
+                } else if (pct >= 100 && s.flipped) {
+                    s.done = true;
+                    bar.style.background = '#f59e0b';
+                    updateSlotUI(i);
+                } else if (!s.flipped && pct > 50) {
+                    bar.style.background = '#f44';
+                } else {
+                    bar.style.background = '#0f0';
+                }
+            }
+        }
+
+        function updateSlotUI(i) {
+            const s = grillSlots[i];
+            const el = document.getElementById(`skewer-${i}`);
+            const bar = el.querySelector('.timer-bar');
+            if (!s.name) {
+                el.childNodes[0].textContent = '[ 空烤位 ]';
+                bar.style.width = '0';
+                bar.style.background = '#0f0';
+            } else if (s.burned) {
+                el.childNodes[0].textContent = `[ 💀 ${s.name} 焦了 ]`;
+            } else if (s.done) {
+                el.childNodes[0].textContent = `[ ✓ ${s.name} 完成！ ]`;
+            } else {
+                const side = s.flipped ? '裏' : '表';
+                el.childNodes[0].textContent = `[ ${s.name} (${side}) ]`;
+            }
+        }
+
+        function serveTo(itemName, type) {
+            let matched = null;
+            seats.forEach(seat => {
+                if (seat.active && !seat.isEating && seat.currentOrder &&
+                    seat.currentOrder.includes(itemName)) {
+                    matched = seat;
+                }
+            });
+
+            let pts = 0;
+            if (itemName.startsWith('焦')) {
+                pts = 30;
+            } else {
+                pts = type === 'drink' ? 100 : 150;
+            }
+
+            if (matched) {
+                pts += 200;
+                eatItem(matched, true);
+            } else {
+                const any = seats.find(s => s.active && !s.isEating);
+                if (any) { eatItem(any, false); pts += 30; }
+            }
+
+            score += pts;
+            serveCount++;
+            scoreEl.innerText = String(score).padStart(4, '0');
+            serveCountEl.innerText = String(serveCount).padStart(2, '0');
+        }
+
+        function manageSeats() {
+            seats.forEach(seat => {
+                if (!seat.active && Math.random() > 0.4) {
+                    seat.active = true; seat.eaten = 0;
+                    seat.capacity = 3 + Math.floor(Math.random() * 4);
+                    const el = document.getElementById(`seat-${seat.id}`);
+                    el.querySelector('.customer-ascii').innerText = customerPool[Math.floor(Math.random() * customerPool.length)];
+                    el.querySelector('.customer-ascii').classList.add('customer-active');
+                    generateOrder(seat);
+                    updateFullnessBar(seat);
+                } else if (seat.active && !seat.isEating && !seat.currentOrder) {
+                    generateOrder(seat);
+                }
+            });
+        }
+
+        function generateOrder(seat) {
+            const drinks = ['啤酒', '清酒', '梅酒', 'Highball'];
+            const skewers = ['雞皮', '豬五花', '牛舌', '蔥鹽'];
+            const r = Math.random();
+            if (r < 0.3) seat.currentOrder = drinks[Math.floor(Math.random() * drinks.length)];
+            else if (r < 0.6) seat.currentOrder = skewers[Math.floor(Math.random() * skewers.length)];
+            else seat.currentOrder = skewers[Math.floor(Math.random() * skewers.length)] + '+' + drinks[Math.floor(Math.random() * drinks.length)];
+            refreshBubble(seat);
+        }
+
+        function refreshBubble(seat) {
+            const el = document.getElementById(`seat-${seat.id}`);
+            const bubble = el.querySelector('.order-bubble');
+            if (seat.currentOrder) {
+                bubble.style.opacity = "1";
+                bubble.innerText = `[ ${seat.currentOrder} ]`;
+            } else {
+                bubble.style.opacity = "0";
+            }
+        }
+
+        function updateFullnessBar(seat) {
+            const el = document.getElementById(`seat-${seat.id}`);
+            const bar = el.querySelector('.fullness-bar');
+            if (!seat.active) { bar.innerText = "[---------]"; return; }
+            const filled = Math.min(9, Math.floor((seat.eaten / seat.capacity) * 9));
+            bar.innerText = "[" + "#".repeat(filled) + "-".repeat(9 - filled) + "]";
+        }
+
+        function eatItem(seat, wasTarget) {
+            const el = document.getElementById(`seat-${seat.id}`);
+            const bubble = el.querySelector('.order-bubble');
+            const asciiEl = el.querySelector('.customer-ascii');
+            const oldFace = asciiEl.innerText;
+            seat.isEating = true; seat.eaten++;
+            updateFullnessBar(seat);
+
+            const good = ["(☆▽☆) 乾杯！", "(*´∀｀*) 烤得剛好!", "(๑´ڡ`๑) 再來一串!", "( •̀ω•́ ) 人生啊～"];
+            const ok = ["(・_・) 將就喝吧", "(￣.￣) 嘛,有酒就好", "(´・ω・`) 先吃再說"];
+
+            bubble.style.opacity = "1";
+            bubble.innerText = wasTarget ? good[Math.floor(Math.random() * good.length)] : ok[Math.floor(Math.random() * ok.length)];
+            asciiEl.innerText = wasTarget ? "(≧▽≦)" : "(・ε・)";
+            if (wasTarget) seat.currentOrder = null;
+
+            setTimeout(() => {
+                if (seat.eaten >= seat.capacity) {
+                    bubble.innerText = "(*ﾟ∀ﾟ) 喝 夠 了";
+                    setTimeout(() => {
+                        bubble.style.opacity = "0";
+                        asciiEl.innerText = "( _ _ )";
+                        asciiEl.classList.remove('customer-active');
+                        seat.active = false; seat.isEating = false;
+                        updateFullnessBar(seat);
+                    }, 1200);
+                } else {
+                    seat.isEating = false;
+                    asciiEl.innerText = oldFace;
+                    refreshBubble(seat);
+                }
+            }, 1200);
+        }
+
+        function setupPointerEvents() {
+            document.addEventListener('pointerdown', (e) => {
+                const target = e.target.closest('.draggable-item');
+                if (!target) return;
+                isDragging = true;
+                target.releasePointerCapture(e.pointerId);
+                dragInfo = { type: target.getAttribute('data-type'), val: target.getAttribute('data-val') };
+                proxy.style.display = 'block';
+                proxy.innerText = `[ ${dragInfo.val} ]`;
+                updateProxy(e);
+            });
+
+            window.addEventListener('pointermove', (e) => {
+                if (!isDragging) return;
+                updateProxy(e);
+            });
+
+            window.addEventListener('pointerup', (e) => {
+                if (!isDragging) return;
+                isDragging = false;
+                proxy.style.display = 'none';
+
+                if (dragInfo.type === 'drink' && isOver(e, cup)) {
+                    cupState.drink = dragInfo.val;
+                    cupFill.style.height = '70%';
+                    cupFill.style.background = drinkColors[dragInfo.val] || '#ccc';
+                    cupLabel.innerText = dragInfo.val;
+                } else if (dragInfo.type === 'skewer') {
+                    // Find empty grill slot under pointer
+                    for (let i = 0; i < 3; i++) {
+                        const slotEl = document.getElementById(`skewer-${i}`);
+                        if (isOver(e, slotEl) && !grillSlots[i].name) {
+                            grillSlots[i] = { name: dragInfo.val, timer: 0, flipped: false, done: false, burned: false };
+                            updateSlotUI(i);
+                            break;
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateProxy(e) { proxy.style.left = e.clientX + 'px'; proxy.style.top = e.clientY + 'px'; }
+
+        function isOver(e, el) {
+            const r = el.getBoundingClientRect();
+            return e.clientX > r.left - 20 && e.clientX < r.right + 20 && e.clientY > r.top - 20 && e.clientY < r.bottom + 20;
+        }
+
+        init();
+    </script>
+</body>
+
+</html>

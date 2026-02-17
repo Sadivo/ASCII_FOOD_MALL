@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>★ 文字美食廣場 ★</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&family=Noto+Sans+TC:wght@400;900&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Courier Prime', 'Noto Sans TC', monospace;
+            background: #000;
+            color: #0f0;
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            user-select: none;
+        }
+
+        /* === Matrix Rain Canvas === */
+        #matrix-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            opacity: 0.15;
+        }
+
+        /* === Header === */
+        .mall-header {
+            position: relative;
+            z-index: 10;
+            text-align: center;
+            padding: 18px 10px 10px;
+            border-bottom: 2px double #0f0;
+            background: rgba(0, 0, 0, 0.85);
+        }
+
+        .mall-title {
+            font-size: 1.6rem;
+            font-weight: 900;
+            letter-spacing: 6px;
+            animation: titlePulse 2s steps(4) infinite;
+        }
+
+        @keyframes titlePulse {
+
+            0%,
+            100% {
+                color: #0f0;
+                text-shadow: 0 0 8px #0f055a, 2px 2px #f59e0b;
+            }
+
+            50% {
+                color: #f59e0b;
+                text-shadow: 0 0 8px #f59e0b55, 2px 2px #0f0;
+            }
+        }
+
+        .mall-subtitle {
+            font-size: 0.7rem;
+            color: #0a0;
+            letter-spacing: 3px;
+            margin-top: 2px;
+        }
+
+        /* === Street Container === */
+        .street-container {
+            flex: 1;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            gap: 16px;
+            padding: 20px 16px 0;
+            position: relative;
+            z-index: 10;
+        }
+
+        /* === Ground Line === */
+        .ground {
+            position: relative;
+            z-index: 10;
+            height: 30px;
+            border-top: 2px solid #0f0;
+            background: rgba(0, 0, 0, 0.85);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .ground-pattern {
+            font-size: 8px;
+            color: #050;
+            white-space: nowrap;
+            letter-spacing: 2px;
+        }
+
+        /* === Shop Base === */
+        .shop-card {
+            flex: 1;
+            max-width: 240px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            cursor: pointer;
+            transition: transform 0.3s, filter 0.3s;
+            position: relative;
+        }
+
+        .shop-card:hover {
+            transform: translateY(-8px);
+        }
+
+        .shop-card:hover .shop-body {
+            border-color: #f59e0b;
+            box-shadow: 0 0 20px #f59e0b33, inset 0 0 15px #f59e0b11;
+        }
+
+        .shop-card:hover .shop-name {
+            color: #f59e0b;
+        }
+
+        .shop-card:hover .enter-btn {
+            color: #f59e0b;
+            border-color: #f59e0b;
+        }
+
+        .shop-card:hover .shop-desc {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .shop-body {
+            width: 100%;
+            border: 2px solid #0f0;
+            background: rgba(0, 0, 0, 0.9);
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .shop-name {
+            text-align: center;
+            font-weight: 900;
+            font-size: 0.85rem;
+            padding: 6px 0;
+            border-bottom: 1px solid #0f0;
+            transition: color 0.3s;
+            letter-spacing: 2px;
+        }
+
+        .shop-interior {
+            height: 110px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            line-height: 1.3;
+            white-space: pre;
+            padding: 8px;
+        }
+
+        .enter-btn {
+            text-align: center;
+            padding: 6px 0;
+            border-top: 1px solid #0f0;
+            font-size: 0.75rem;
+            font-weight: bold;
+            transition: all 0.3s;
+            letter-spacing: 2px;
+        }
+
+        .shop-desc {
+            position: absolute;
+            top: -38px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-5px);
+            background: #000;
+            border: 1px solid #f59e0b;
+            color: #f59e0b;
+            font-size: 10px;
+            padding: 4px 10px;
+            white-space: nowrap;
+            opacity: 0;
+            transition: all 0.3s;
+            z-index: 20;
+            pointer-events: none;
+        }
+
+        .shop-desc::after {
+            content: '▼';
+            position: absolute;
+            bottom: -12px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #f59e0b;
+            font-size: 8px;
+        }
+
+        /* ============================================ */
+        /* === SHOP 1: Sushi — 三角屋頂 + 暖簾       === */
+        /* ============================================ */
+        .shop-sushi .shop-roof {
+            width: 110%;
+            text-align: center;
+            margin-bottom: -2px;
+        }
+
+        .shop-sushi .roof-line {
+            font-size: 9px;
+            color: #0f0;
+            letter-spacing: 0;
+        }
+
+        .shop-sushi .shop-body {
+            border-radius: 0;
+        }
+
+        .noren-container {
+            display: flex;
+            justify-content: center;
+            gap: 2px;
+        }
+
+        .noren-strip {
+            display: inline-block;
+            font-size: 11px;
+            animation: norenSway 2s ease-in-out infinite;
+        }
+
+        .noren-strip:nth-child(2) {
+            animation-delay: 0.3s;
+        }
+
+        .noren-strip:nth-child(3) {
+            animation-delay: 0.6s;
+        }
+
+        .noren-strip:nth-child(4) {
+            animation-delay: 0.15s;
+        }
+
+        .noren-strip:nth-child(5) {
+            animation-delay: 0.45s;
+        }
+
+        @keyframes norenSway {
+
+            0%,
+            100% {
+                transform: rotate(0deg);
+            }
+
+            25% {
+                transform: rotate(2deg);
+            }
+
+            75% {
+                transform: rotate(-2deg);
+            }
+        }
+
+        /* ============================================ */
+        /* === SHOP 2: Ramen — 煙囪工廠風            === */
+        /* ============================================ */
+        .shop-ramen .chimney {
+            width: 30px;
+            height: 50px;
+            border: 2px solid #0f0;
+            border-bottom: none;
+            margin: 0 auto -2px;
+            background: #000;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        .smoke-char {
+            font-size: 10px;
+            color: #555;
+            animation: smokeRise 1.5s linear infinite;
+            position: absolute;
+        }
+
+        .smoke-char:nth-child(1) {
+            animation-delay: 0s;
+            left: 4px;
+        }
+
+        .smoke-char:nth-child(2) {
+            animation-delay: 0.5s;
+            left: 14px;
+        }
+
+        .smoke-char:nth-child(3) {
+            animation-delay: 1s;
+            left: 9px;
+        }
+
+        @keyframes smokeRise {
+            0% {
+                bottom: 0;
+                opacity: 0.8;
+            }
+
+            100% {
+                bottom: 55px;
+                opacity: 0;
+            }
+        }
+
+        .shop-ramen .shop-body {
+            border-width: 3px;
+        }
+
+        /* ============================================ */
+        /* === SHOP 3: Izakaya — 燈籠 + 粗框          === */
+        /* ============================================ */
+        .shop-izakaya .lanterns {
+            display: flex;
+            justify-content: center;
+            gap: 18px;
+            margin-bottom: 6px;
+        }
+
+        .lantern {
+            font-size: 16px;
+            color: #f44;
+            text-shadow: 0 0 8px #f44;
+            animation: lanternSwing 2.5s ease-in-out infinite;
+        }
+
+        .lantern:nth-child(2) {
+            animation-delay: 0.8s;
+        }
+
+        .lantern:nth-child(3) {
+            animation-delay: 1.6s;
+        }
+
+        @keyframes lanternSwing {
+
+            0%,
+            100% {
+                transform: rotate(-5deg);
+            }
+
+            50% {
+                transform: rotate(5deg);
+            }
+        }
+
+        .shop-izakaya .shop-body {
+            border-width: 3px;
+            border-style: double;
+        }
+
+        .shop-izakaya .shop-interior {
+            color: #f59e0b;
+        }
+
+        /* ============================================ */
+        /* === SHOP 4: Dessert — 圓弧咖啡廳風         === */
+        /* ============================================ */
+        .shop-dessert .sparkles {
+            text-align: center;
+            margin-bottom: 4px;
+            font-size: 12px;
+            letter-spacing: 8px;
+        }
+
+        .sparkle {
+            display: inline-block;
+            animation: sparkleFlash 1.5s steps(2) infinite;
+        }
+
+        .sparkle:nth-child(2) {
+            animation-delay: 0.5s;
+        }
+
+        .sparkle:nth-child(3) {
+            animation-delay: 1s;
+        }
+
+        @keyframes sparkleFlash {
+
+            0%,
+            100% {
+                color: #f59e0b;
+                opacity: 1;
+            }
+
+            50% {
+                color: #0f0;
+                opacity: 0.3;
+            }
+        }
+
+        .shop-dessert .shop-body {
+            border-radius: 12px;
+        }
+
+        .shop-dessert .shop-name {
+            border-radius: 10px 10px 0 0;
+        }
+
+        .shop-dessert .enter-btn {
+            border-radius: 0 0 10px 10px;
+        }
+
+        .shop-dessert .shop-interior {
+            color: #f0c0e0;
+        }
+    </style>
+</head>
+
+<body>
+    <canvas id="matrix-canvas"></canvas>
+
+    <div class="mall-header">
+        <div class="mall-title">★ 煞氣美食廣場 ★</div>
+        <div class="mall-subtitle">~ A S C I I &nbsp; F O O D &nbsp; M A L L ~</div>
+    </div>
+
+    <div class="street-container">
+
+        <!-- 🍣 Shop 1: Sushi -->
+        <div class="shop-card shop-sushi" onclick="location.href='sushi.html'">
+            <div class="shop-roof">
+                <div class="roof-line">&nbsp;&nbsp;&nbsp;&nbsp;/\‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾/\</div>
+                <div class="roof-line">&nbsp;&nbsp;/\‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾/\</div>
+                <div class="roof-line">/‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾\</div>
+            </div>
+            <div class="shop-body">
+                <div class="shop-name">煞氣鮨-迴轉壽司</div>
+                <div class="shop-interior">
+                    <div class="noren-container">
+                        <span class="noren-strip">┃鮮┃</span>
+                        <span class="noren-strip">┃魚┃</span>
+                        <span class="noren-strip">┃處┃</span>
+                        <span class="noren-strip">┃鮮┃</span>
+                        <span class="noren-strip">┃魚┃</span>
+                    </div>
+                </div>
+                <div class="enter-btn">[ 入 店 ▶ ]</div>
+            </div>
+            <div class="shop-desc">🍣 迴轉壽司 — 拖曳食材製作壽司！</div>
+        </div>
+
+        <!-- 🍜 Shop 2: Ramen -->
+        <div class="shop-card shop-ramen" onclick="location.href='ramen.html'">
+            <div class="chimney">
+                <span class="smoke-char">～</span>
+                <span class="smoke-char">～</span>
+                <span class="smoke-char">～</span>
+            </div>
+            <div class="shop-body">
+                <div class="shop-name">煉獄軒-拉麵</div>
+                <div class="shop-interior">
+                    ___________
+                    / 豚骨湯底 \
+                    | ～～～～～～ |
+                    | 麵 叉燒 |
+                    \___________/</div>
+                <div class="enter-btn">[ 入 店 ▶ ]</div>
+            </div>
+            <div class="shop-desc">🍜 拉麵店 — 煮麵配料一碗入魂！</div>
+        </div>
+
+        <!-- 🍶 Shop 3: Izakaya -->
+        <div class="shop-card shop-izakaya" onclick="location.href='izakaya.html'">
+            <div class="lanterns">
+                <span class="lantern">◉</span>
+                <span class="lantern">◉</span>
+                <span class="lantern">◉</span>
+            </div>
+            <div class="shop-body">
+                <div class="shop-name">黄泉亭-居酒屋</div>
+                <div class="shop-interior">
+                    ┃🍺┃ 🔥🔥🔥 ┃🍶┃
+                    ┃ ┃ ┃雞┃豬┃ ┃ ┃
+                    ┃ ┃ ┃皮┃肉┃ ┃ ┃
+                    ━━━━━━━━━━━━━━━
+                    乾 杯 ！</div>
+                <div class="enter-btn">[ 入 店 ▶ ]</div>
+            </div>
+            <div class="shop-desc">🍶 居酒屋 — 調酒串燒一起來！</div>
+        </div>
+
+        <!-- 🍰 Shop 4: Dessert -->
+        <div class="shop-card shop-dessert" onclick="location.href='dessert.html'">
+            <div class="sparkles">
+                <span class="sparkle">☆</span>
+                <span class="sparkle">★</span>
+                <span class="sparkle">☆</span>
+            </div>
+            <div class="shop-body">
+                <div class="shop-name">虛無堂-甜點</div>
+                <div class="shop-interior">
+                    ♥
+                    ~~~~ ← 鮮奶油
+                    ======
+                    ======== ← 鬆餅
+                    [盤子]
+                    甜蜜虛無</div>
+                <div class="enter-btn">[ 入 店 ▶ ]</div>
+            </div>
+            <div class="shop-desc">🍰 甜點店 — 堆疊你的夢幻甜品！</div>
+        </div>
+
+    </div>
+
+    <div class="ground">
+        <div class="ground-pattern" id="ground-text"></div>
+    </div>
+
+
+    <script>
+        // === Matrix Rain ===
+        const canvas = document.getElementById('matrix-canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        const chars = '壽司拉麵酒甜點串燒炸烤煮蒸丼刺身手捲天婦羅味噌豚骨鮭鮪海老玉子アイウエオカキクケコ01';
+        const fontSize = 14;
+        const columns = Math.floor(canvas.width / fontSize);
+        const drops = Array(columns).fill(1);
+
+        function drawMatrix() {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.06)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#0f0';
+            ctx.font = fontSize + 'px Courier Prime';
+
+            for (let i = 0; i < drops.length; i++) {
+                const char = chars[Math.floor(Math.random() * chars.length)];
+                ctx.fillText(char, i * fontSize, drops[i] * fontSize);
+
+                if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
+                    drops[i] = 0;
+                }
+                drops[i]++;
+            }
+        }
+
+        setInterval(drawMatrix, 60);
+
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        });
+
+        // === Ground Pattern ===
+        const groundEl = document.getElementById('ground-text');
+        const gp = '═══╬═══╬═══╬═══╬';
+        groundEl.innerText = gp.repeat(20);
+
+
+    </script>
+</body>
+
+</html>

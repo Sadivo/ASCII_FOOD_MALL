@@ -1,0 +1,888 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>煉獄軒 — 拉麵店</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&family=Noto+Sans+TC:wght@400;900&display=swap');
+
+        body {
+            font-family: 'Courier Prime', 'Noto Sans TC', monospace;
+            background-color: #000;
+            color: #0f0;
+            touch-action: none;
+            user-select: none;
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        @keyframes titleShake {
+
+            0%,
+            100% {
+                transform: translateY(0);
+                color: #0f0;
+                text-shadow: 2px 2px #f59e0b;
+            }
+
+            25% {
+                transform: translateY(-3px);
+                color: #f59e0b;
+                text-shadow: 2px 2px #0f0;
+            }
+
+            50% {
+                transform: translateY(1px);
+                color: #0f0;
+                text-shadow: 2px 2px #f59e0b;
+            }
+
+            75% {
+                transform: translateY(-1px);
+                color: #f59e0b;
+                text-shadow: 2px 2px #0f0;
+            }
+        }
+
+        .page-title {
+            font-size: 1.4rem;
+            font-weight: 900;
+            animation: titleShake 1.2s steps(4) infinite;
+            letter-spacing: 1px;
+            padding: 10px 0;
+            text-align: center;
+            border-bottom: 2px double #0f0;
+            background: #000;
+        }
+
+        .shop-sign {
+            font-size: 10px;
+            color: #0f0;
+            text-align: center;
+            margin-top: 10px;
+            line-height: 1.2;
+            font-weight: bold;
+            white-space: pre;
+        }
+
+        .back-btn {
+            position: absolute;
+            left: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 11px;
+            color: #0f0;
+            cursor: pointer;
+            text-decoration: none;
+            border: 1px solid #0f0;
+            padding: 2px 8px;
+            z-index: 20;
+        }
+
+        .back-btn:hover {
+            color: #f59e0b;
+            border-color: #f59e0b;
+        }
+
+        .score-board {
+            font-size: 0.8rem;
+            padding: 4px 10px;
+            border-bottom: 1px double #0f0;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        /* === Customer area === */
+        .customer-ascii {
+            font-size: 1.1rem;
+            color: #0f0;
+            opacity: 0.1;
+            transition: all 0.3s;
+        }
+
+        .customer-active {
+            opacity: 1;
+        }
+
+        .fullness-bar {
+            font-size: 7px;
+            color: #0c0;
+            margin-top: 1px;
+        }
+
+        .order-bubble {
+            position: absolute;
+            top: -40px;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 1px solid #fff;
+            color: #fff;
+            padding: 3px 8px;
+            font-size: 0.65rem;
+            opacity: 0;
+            background: #000;
+            z-index: 50;
+            white-space: nowrap;
+        }
+
+        /* === Counter bar (like sushi belt) === */
+        .counter-bar {
+            border-top: 2px dashed #0f0;
+            border-bottom: 2px dashed #0f0;
+            height: 42px;
+            position: relative;
+            background: #020;
+        }
+
+        .counter-arrows {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            font-size: 8px;
+            opacity: 0.15;
+            pointer-events: none;
+        }
+
+        /* Drop zones on counter for each seat */
+        .counter-slot {
+            position: absolute;
+            top: 4px;
+            width: 80px;
+            height: 32px;
+            border: 1px dashed #0a0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 9px;
+            color: #0a0;
+            transition: all 0.3s;
+        }
+
+        .counter-slot-active {
+            border-color: #f59e0b;
+            color: #f59e0b;
+            background: rgba(245, 158, 11, 0.05);
+        }
+
+        .counter-slot-filled {
+            border-color: #0f0;
+            color: #0f0;
+            background: rgba(0, 255, 0, 0.05);
+        }
+
+        /* === Cooking area === */
+        .hint-text {
+            font-size: 13px;
+            color: #f59e0b;
+            text-align: center;
+            margin: 4px 0;
+            line-height: 1.4;
+            opacity: 0.8;
+        }
+
+        .draggable-item {
+            cursor: pointer;
+            border: 1px solid #0f0;
+            padding: 3px 7px;
+            margin: 2px;
+            background: #000;
+            display: inline-block;
+            text-align: center;
+            font-size: 11px;
+        }
+
+        .drag-proxy {
+            position: fixed;
+            pointer-events: none;
+            z-index: 9999;
+            border: 1px solid #ff0;
+            color: #ff0;
+            background: #000;
+            padding: 4px 12px;
+            display: none;
+            transform: translate(-50%, -50%);
+            font-weight: bold;
+        }
+
+        .border-ascii {
+            border: 1px solid #0f0;
+            position: relative;
+        }
+
+        /* Bowl */
+        .bowl-area {
+            width: 180px;
+            height: 100px;
+            border: 2px solid #0f0;
+            border-radius: 0 0 50% 50%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            background: #050505;
+            overflow: hidden;
+        }
+
+        .soup-base {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 0;
+            transition: height 0.5s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 0 0 50% 50%;
+        }
+
+        .soup-wave {
+            position: absolute;
+            top: -4px;
+            width: 100%;
+            text-align: center;
+            font-size: 9px;
+            animation: waveMove 1.5s linear infinite;
+        }
+
+        @keyframes waveMove {
+            0% {
+                transform: translateX(-5px);
+            }
+
+            50% {
+                transform: translateX(5px);
+            }
+
+            100% {
+                transform: translateX(-5px);
+            }
+        }
+
+        /* Noodle cooking station */
+        .cook-station {
+            width: 130px;
+            height: 80px;
+            border: 2px solid #f59e0b;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            background: #0a0500;
+        }
+
+        .cook-station-water {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 50%;
+            background: rgba(200, 200, 255, 0.08);
+            border-top: 1px solid #333;
+        }
+
+        .cook-station .noodle-display {
+            z-index: 5;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .noodle-timer {
+            width: 100px;
+            height: 12px;
+            border: 1px solid #0f0;
+            position: relative;
+            overflow: hidden;
+            margin-top: 4px;
+        }
+
+        .noodle-timer-fill {
+            height: 100%;
+            background: #0f0;
+            transition: width 0.1s, background 0.3s;
+        }
+
+        .noodle-timer-text {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 8px;
+            color: #000;
+            font-weight: bold;
+            line-height: 12px;
+        }
+
+        /* Bubbling animation for cooking station */
+        .bubble-particle {
+            position: absolute;
+            pointer-events: none;
+            font-size: 8px;
+            color: #aaf;
+            z-index: 6;
+            animation: bubbleUp 0.8s ease-out forwards;
+        }
+
+        @keyframes bubbleUp {
+            0% {
+                transform: translateY(0);
+                opacity: 0.6;
+            }
+
+            100% {
+                transform: translateY(-30px);
+                opacity: 0;
+            }
+        }
+
+        /* Steam */
+        .steam-particle {
+            position: fixed;
+            pointer-events: none;
+            font-size: 10px;
+            color: #666;
+            z-index: 10000;
+            animation: steamFloat 1s ease-out forwards;
+        }
+
+        @keyframes steamFloat {
+            0% {
+                transform: translate(0, 0) scale(1);
+                opacity: 0.5;
+            }
+
+            100% {
+                transform: translate(var(--dx), -50px) scale(1.3);
+                opacity: 0;
+            }
+        }
+    </style>
+</head>
+
+<body class="flex flex-col">
+
+    <div class="page-title relative">
+        <a href="index.html" class="back-btn">⬅ 大廳</a>
+        ~.:: 文字拉麵店 ::.~
+    </div>
+
+    <div class="score-board">
+        <span>[ 積分: <span id="score-val">0000</span> ]</span>
+        <span>[ 出餐: <span id="total-serve">00</span> ]</span>
+    </div>
+
+    <!-- Customer Area -->
+    <div class="flex flex-col justify-end bg-black">
+
+        <!-- 方框小招牌區 -->
+        <div id="random-shop-sign" class="shop-sign"></div>
+
+        <div class="flex justify-around items-end px-4 pb-4 mt-2">
+            <div id="seat-0" class="relative flex flex-col items-center">
+                <div class="order-bubble"></div>
+                <div class="customer-ascii">( _ _ )</div>
+                <div class="fullness-bar">[---------]</div>
+            </div>
+            <div id="seat-1" class="relative flex flex-col items-center">
+                <div class="order-bubble"></div>
+                <div class="customer-ascii">( _ _ )</div>
+                <div class="fullness-bar">[---------]</div>
+            </div>
+            <div id="seat-2" class="relative flex flex-col items-center">
+                <div class="order-bubble"></div>
+                <div class="customer-ascii">( _ _ )</div>
+                <div class="fullness-bar">[---------]</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- === Counter Bar === -->
+    <div id="counter-bar" class="counter-bar">
+        <div class="counter-arrows">════════════════════════════════════════════════════════════════════════════════
+        </div>
+        <div id="counter-0" class="counter-slot" style="left:calc(16.66% - 40px);">[ 空 ]</div>
+        <div id="counter-1" class="counter-slot" style="left:calc(50% - 40px);">[ 空 ]</div>
+        <div id="counter-2" class="counter-slot" style="left:calc(83.33% - 40px);">[ 空 ]</div>
+    </div>
+
+    <div class="hint-text">
+        <span class="text-[#0f0]">【秘傳】</span>
+        湯底→碗 | 麵→煮麵台(等計時) | 熟麵→碗 | 配料→碗 | 成品拖到客人前出餐
+        <span class="text-[#ff4444]"> !! 麵煮太久會爛 !!</span>
+    </div>
+
+    <!-- === Cooking Area === -->
+    <div class="flex-1 flex items-start justify-center p-1 gap-3 mt-1">
+
+        <!-- Left: Noodle Cooking Station -->
+        <div class="flex flex-col items-center space-y-1">
+            <div class="text-[9px] text-[#f59e0b]">【煮麵台】</div>
+            <div id="cook-station" class="cook-station">
+                <div class="cook-station-water"></div>
+                <div id="cook-noodle-display" class="noodle-display"></div>
+            </div>
+            <div id="timer-container" style="visibility:hidden;">
+                <div class="noodle-timer">
+                    <div id="timer-fill" class="noodle-timer-fill" style="width:0%"></div>
+                    <div id="timer-text" class="noodle-timer-text">等待中</div>
+                </div>
+            </div>
+            <div class="border-ascii p-1 flex flex-row space-x-1">
+                <div class="text-[9px] text-[#f59e0b] flex items-center">【生麵】</div>
+                <div class="draggable-item" data-type="raw-noodle" data-val="細麵">細麵</div>
+                <div class="draggable-item" data-type="raw-noodle" data-val="太麵">太麵</div>
+                <div class="draggable-item" data-type="raw-noodle" data-val="縮麵">縮麵</div>
+            </div>
+        </div>
+
+        <!-- Center: Soup -->
+        <div class="flex flex-col items-center space-y-1">
+            <div class="border-ascii p-1 flex flex-col space-y-1">
+                <div class="text-[9px] text-center text-[#f59e0b]">【湯底】</div>
+                <div class="draggable-item" data-type="soup" data-val="豚骨">豚骨</div>
+                <div class="draggable-item" data-type="soup" data-val="味噌">味噌</div>
+                <div class="draggable-item" data-type="soup" data-val="醬油">醬油</div>
+                <div class="draggable-item" data-type="soup" data-val="鹽味">鹽味</div>
+            </div>
+        </div>
+
+        <!-- Center-Right: Bowl -->
+        <div class="flex flex-col items-center space-y-1">
+            <div class="text-[9px] text-[#f59e0b]">【拉麵碗】</div>
+            <div id="drop-bowl" class="bowl-area">
+                <div id="soup-fill" class="soup-base">
+                    <div class="soup-wave">～～～～～～</div>
+                </div>
+                <div id="bowl-content" class="z-10 text-center">
+                    <div id="bowl-toppings" class="text-[10px]"></div>
+                    <div id="bowl-noodle" class="text-xs font-bold"></div>
+                    <div id="bowl-soup-label" class="text-[9px]"></div>
+                </div>
+            </div>
+            <div id="bowl-clear" class="text-[8px] text-[#555] cursor-pointer hover:text-[#f44]">[ 倒掉重來 ]</div>
+        </div>
+
+        <!-- Right: Toppings & Spice -->
+        <div class="flex flex-col items-center space-y-1">
+            <div class="border-ascii p-1 grid grid-cols-2 gap-1">
+                <div class="text-[9px] text-center col-span-2 text-[#f59e0b]">【配料】</div>
+                <div class="draggable-item" data-type="topping" data-val="叉燒">叉燒</div>
+                <div class="draggable-item" data-type="topping" data-val="半熟蛋">半熟蛋</div>
+                <div class="draggable-item" data-type="topping" data-val="海苔">海苔</div>
+                <div class="draggable-item" data-type="topping" data-val="蔥花">蔥花</div>
+                <div class="draggable-item" data-type="topping" data-val="筍干">筍干</div>
+            </div>
+            <div class="border-ascii p-1 flex flex-row space-x-1">
+                <div class="text-[9px] text-[#f59e0b] flex items-center">【辣度】</div>
+                <div class="draggable-item" data-type="spice" data-val="微辣">微辣</div>
+                <div class="draggable-item" data-type="spice" data-val="中辣">中辣</div>
+                <div class="draggable-item" data-type="spice" data-val="激辛">激辛</div>
+            </div>
+        </div>
+    </div>
+
+    <div id="drag-proxy" class="drag-proxy"></div>
+
+    <script>
+        const bowl = document.getElementById('drop-bowl');
+        const soupFill = document.getElementById('soup-fill');
+        const cookStation = document.getElementById('cook-station');
+        const cookDisplay = document.getElementById('cook-noodle-display');
+        const timerContainer = document.getElementById('timer-container');
+        const timerFill = document.getElementById('timer-fill');
+        const timerText = document.getElementById('timer-text');
+        const proxy = document.getElementById('drag-proxy');
+        const scoreEl = document.getElementById('score-val');
+        const serveCountEl = document.getElementById('total-serve');
+        const bowlClear = document.getElementById('bowl-clear');
+
+        const soupColors = { '豚骨': '#e8d5b7', '味噌': '#c4863c', '醬油': '#5c3a1e', '鹽味': '#d4d4aa' };
+
+        let score = 0, serveCount = 0;
+        let isDragging = false;
+        let dragInfo = { type: '', val: '' };
+
+        // Bowl state
+        let bowlState = {
+            soup: null, noodle: null, toppings: [], spice: null
+        };
+
+        // Cooking station state
+        let cookState = {
+            noodle: null, timer: 0, cooking: false,
+            cooked: false, overcooked: false
+        };
+
+        const signEl = document.getElementById('random-shop-sign');
+
+        const shopNames = [
+            "煉 獄 軒 ‧ 本 店",
+            "死 神 ‧ 拉 麵 屋",
+            "地 獄 豚 骨 處",
+            "三 途 ‧ 製 麵 所",
+            "妖 火 ‧ 湯 頭 舖"
+        ];
+
+        const customerPool = [
+            "( ^_^ )", "( o_o )", "( >_< )", "( -_- )",
+            "( *_* )", "( @.@ )", "( ^ω^ )", "( •̀ω•́ )"
+        ];
+
+        let seats = [
+            { id: 0, active: false, currentOrder: null, eaten: 0, capacity: 3, isEating: false },
+            { id: 1, active: false, currentOrder: null, eaten: 0, capacity: 3, isEating: false },
+            { id: 2, active: false, currentOrder: null, eaten: 0, capacity: 3, isEating: false }
+        ];
+
+        function init() {
+            // 隨機店名招牌渲染
+            const randomName = shopNames[Math.floor(Math.random() * shopNames.length)];
+            const paddedName = ` ${randomName} `;
+            const borderLine = "+" + "-".repeat(16) + "+";
+            signEl.innerText = `${borderLine}\n|${paddedName}|\n${borderLine}`;
+
+            setupPointerEvents();
+            bowlClear.addEventListener('click', clearBowl);
+            setInterval(manageSeats, 4000);
+            setInterval(updateCookTimer, 100);
+            setInterval(createSteam, 800);
+            setInterval(createBubble, 400);
+        }
+
+        // === Steam & Bubble Effects ===
+        function createSteam() {
+            if (!bowlState.soup) return;
+            const rect = bowl.getBoundingClientRect();
+            const s = document.createElement('div');
+            s.className = 'steam-particle';
+            s.innerText = '湯';
+            s.style.left = (rect.left + Math.random() * rect.width) + 'px';
+            s.style.top = (rect.top - 5) + 'px';
+            s.style.setProperty('--dx', ((Math.random() - 0.5) * 25) + 'px');
+            document.body.appendChild(s);
+            setTimeout(() => s.remove(), 1000);
+        }
+
+        function createBubble() {
+            if (!cookState.cooking) return;
+            const rect = cookStation.getBoundingClientRect();
+            const b = document.createElement('div');
+            b.className = 'bubble-particle';
+            b.innerText = '°';
+            b.style.left = (rect.left + 10 + Math.random() * (rect.width - 20)) + 'px';
+            b.style.top = (rect.top + rect.height * 0.6) + 'px';
+            cookStation.appendChild(b);
+            setTimeout(() => b.remove(), 800);
+        }
+
+        // === Noodle Cooking Timer ===
+        function updateCookTimer() {
+            if (!cookState.cooking) return;
+            cookState.timer += 1;
+            const pct = Math.min(100, (cookState.timer / 100) * 100);
+            timerFill.style.width = pct + '%';
+
+            if (pct < 40) {
+                timerFill.style.background = '#f59e0b';
+                timerText.innerText = '生...';
+            } else if (pct < 80) {
+                timerFill.style.background = '#0f0';
+                timerText.innerText = '剛好！撈起來！';
+                cookState.cooked = true;
+            } else if (pct < 100) {
+                timerFill.style.background = '#f44';
+                timerText.innerText = '快爛了！';
+            } else {
+                cookState.cooking = false;
+                cookState.overcooked = true;
+                timerText.innerText = '爛掉了...';
+                timerFill.style.background = '#555';
+                cookDisplay.innerText = '💀 ' + cookState.noodle + '（爛）';
+                cookDisplay.style.color = '#555';
+            }
+        }
+
+        // === Customer Management ===
+        function manageSeats() {
+            seats.forEach(seat => {
+                if (!seat.active && Math.random() > 0.4) {
+                    seat.active = true; seat.eaten = 0;
+                    seat.capacity = 2 + Math.floor(Math.random() * 3);
+                    const el = document.getElementById(`seat-${seat.id}`);
+                    el.querySelector('.customer-ascii').innerText = customerPool[Math.floor(Math.random() * customerPool.length)];
+                    el.querySelector('.customer-ascii').classList.add('customer-active');
+                    generateOrder(seat);
+                    updateFullnessBar(seat);
+                    updateCounterSlot(seat.id);
+                } else if (seat.active && !seat.isEating && !seat.currentOrder) {
+                    generateOrder(seat);
+                }
+            });
+        }
+
+        function generateOrder(seat) {
+            const soups = ['豚骨', '味噌', '醬油', '鹽味'];
+            const tops = ['叉燒', '半熟蛋', '海苔', '蔥花', '筍干'];
+            const spices = ['', '微辣', '中辣', '激辛'];
+            const s = soups[Math.floor(Math.random() * soups.length)];
+            const sp = spices[Math.floor(Math.random() * spices.length)];
+            const t = tops[Math.floor(Math.random() * tops.length)];
+            seat.currentOrder = (sp || '') + s + '拉麵+' + t;
+            refreshBubble(seat);
+        }
+
+        function refreshBubble(seat) {
+            const el = document.getElementById(`seat-${seat.id}`);
+            const bubble = el.querySelector('.order-bubble');
+            if (seat.currentOrder) {
+                bubble.style.opacity = "1";
+                bubble.innerText = `[ ${seat.currentOrder} ]`;
+            } else {
+                bubble.style.opacity = "0";
+            }
+        }
+
+        function updateFullnessBar(seat) {
+            const el = document.getElementById(`seat-${seat.id}`);
+            const bar = el.querySelector('.fullness-bar');
+            if (!seat.active) { bar.innerText = "[---------]"; return; }
+            const filled = Math.min(9, Math.floor((seat.eaten / seat.capacity) * 9));
+            bar.innerText = "[" + "#".repeat(filled) + "-".repeat(9 - filled) + "]";
+        }
+
+        function updateCounterSlot(seatId) {
+            const slot = document.getElementById(`counter-${seatId}`);
+            const seat = seats[seatId];
+            if (!seat.active) {
+                slot.innerText = '[ 空 ]';
+                slot.className = 'counter-slot';
+            } else {
+                slot.innerText = '[ 等待 ]';
+                slot.className = 'counter-slot counter-slot-active';
+            }
+        }
+
+        // === Bowl Management ===
+        function updateBowl() {
+            document.getElementById('bowl-soup-label').innerText = bowlState.soup ? `《${bowlState.soup}》` : '';
+            document.getElementById('bowl-noodle').innerText = bowlState.noodle || '';
+            let tText = bowlState.toppings.join(' ');
+            if (bowlState.spice) tText += (tText ? ' ' : '') + '🔥' + bowlState.spice;
+            document.getElementById('bowl-toppings').innerText = tText;
+        }
+
+        function clearBowl() {
+            bowlState = { soup: null, noodle: null, toppings: [], spice: null };
+            soupFill.style.height = '0';
+            updateBowl();
+        }
+
+        function isBowlComplete() {
+            return bowlState.soup && bowlState.noodle;
+        }
+
+        function getBowlName() {
+            let name = '';
+            if (bowlState.spice) name += bowlState.spice;
+            name += bowlState.soup + '拉麵';
+            if (bowlState.toppings.length > 0) name += '+' + bowlState.toppings[0];
+            return name;
+        }
+
+        // === Drag & Drop ===
+        function setupPointerEvents() {
+            document.addEventListener('pointerdown', (e) => {
+                // Check if clicking on the bowl to drag the completed ramen
+                if (isBowlComplete()) {
+                    const bowlRect = bowl.getBoundingClientRect();
+                    if (e.clientX > bowlRect.left && e.clientX < bowlRect.right &&
+                        e.clientY > bowlRect.top && e.clientY < bowlRect.bottom) {
+                        isDragging = true;
+                        dragInfo = { type: 'finished-bowl', val: getBowlName() };
+                        proxy.style.display = 'block';
+                        proxy.innerText = `[ ${dragInfo.val} ]`;
+                        updateProxy(e);
+                        return;
+                    }
+                }
+
+                // Check if clicking on cook station to drag cooked noodle
+                if (cookState.noodle && (cookState.cooked || cookState.overcooked)) {
+                    const csRect = cookStation.getBoundingClientRect();
+                    if (e.clientX > csRect.left && e.clientX < csRect.right &&
+                        e.clientY > csRect.top && e.clientY < csRect.bottom) {
+                        isDragging = true;
+                        cookState.cooking = false; // stop cooking when picked up
+                        const nVal = cookState.overcooked ? cookState.noodle + '（爛）' : cookState.noodle;
+                        dragInfo = { type: 'cooked-noodle', val: nVal, overcooked: cookState.overcooked };
+                        proxy.style.display = 'block';
+                        proxy.innerText = `[ ${nVal} ]`;
+                        updateProxy(e);
+                        return;
+                    }
+                }
+
+                const target = e.target.closest('.draggable-item');
+                if (!target) return;
+                isDragging = true;
+                target.releasePointerCapture(e.pointerId);
+                dragInfo = { type: target.getAttribute('data-type'), val: target.getAttribute('data-val') };
+                proxy.style.display = 'block';
+                proxy.innerText = `[ ${dragInfo.val} ]`;
+                updateProxy(e);
+            });
+
+            window.addEventListener('pointermove', (e) => {
+                if (!isDragging) return;
+                updateProxy(e);
+            });
+
+            window.addEventListener('pointerup', (e) => {
+                if (!isDragging) return;
+                isDragging = false;
+                proxy.style.display = 'none';
+
+                // Drop raw noodle on cook station
+                if (dragInfo.type === 'raw-noodle' && isOver(e, cookStation)) {
+                    if (!cookState.noodle) {
+                        cookState = { noodle: dragInfo.val, timer: 0, cooking: true, cooked: false, overcooked: false };
+                        cookDisplay.innerText = dragInfo.val;
+                        cookDisplay.style.color = '#f59e0b';
+                        timerContainer.style.visibility = 'visible';
+                        timerFill.style.width = '0%';
+                        timerText.innerText = '煮麵中...';
+                    }
+                    return;
+                }
+
+                // Drop cooked noodle into bowl
+                if (dragInfo.type === 'cooked-noodle' && isOver(e, bowl)) {
+                    bowlState.noodle = dragInfo.val;
+                    // Clear cook station
+                    cookState = { noodle: null, timer: 0, cooking: false, cooked: false, overcooked: false };
+                    cookDisplay.innerText = '';
+                    timerContainer.style.visibility = 'hidden';
+                    timerFill.style.width = '0%';
+                    updateBowl();
+                    return;
+                }
+
+                // Drop soup / topping / spice into bowl
+                if (isOver(e, bowl)) {
+                    if (dragInfo.type === 'soup' && !bowlState.soup) {
+                        bowlState.soup = dragInfo.val;
+                        soupFill.style.height = '50%';
+                        soupFill.style.background = soupColors[dragInfo.val] || '#ccc';
+                    } else if (dragInfo.type === 'topping' && bowlState.soup && bowlState.toppings.length < 3) {
+                        if (!bowlState.toppings.includes(dragInfo.val)) {
+                            bowlState.toppings.push(dragInfo.val);
+                        }
+                    } else if (dragInfo.type === 'spice' && bowlState.soup) {
+                        bowlState.spice = dragInfo.val;
+                    }
+                    updateBowl();
+                    return;
+                }
+
+                // Drop finished bowl on counter slot → serve to customer
+                if (dragInfo.type === 'finished-bowl') {
+                    for (let i = 0; i < 3; i++) {
+                        const slot = document.getElementById(`counter-${i}`);
+                        if (isOver(e, slot) && seats[i].active && !seats[i].isEating) {
+                            serveToCustomer(i);
+                            return;
+                        }
+                    }
+                }
+            });
+        }
+
+        function serveToCustomer(seatId) {
+            const seat = seats[seatId];
+            const bowlName = getBowlName();
+            const wasTarget = seat.currentOrder === bowlName;
+            const isOvercooked = bowlState.noodle && bowlState.noodle.includes('（爛）');
+
+            let pts = 0;
+            if (isOvercooked) pts = 50;
+            else if (wasTarget) pts = 500;
+            else pts = 150;
+            pts += bowlState.toppings.length * 30;
+            if (bowlState.spice) pts += 20;
+
+            score += pts;
+            serveCount++;
+            scoreEl.innerText = String(score).padStart(4, '0');
+            serveCountEl.innerText = String(serveCount).padStart(2, '0');
+
+            // Show on counter
+            const slot = document.getElementById(`counter-${seatId}`);
+            slot.innerText = `[${bowlState.soup}麵]`;
+            slot.className = 'counter-slot counter-slot-filled';
+
+            // Customer eats
+            eatRamen(seat, wasTarget);
+
+            // Clear bowl
+            clearBowl();
+        }
+
+        function eatRamen(seat, wasTarget) {
+            const el = document.getElementById(`seat-${seat.id}`);
+            const bubble = el.querySelector('.order-bubble');
+            const asciiEl = el.querySelector('.customer-ascii');
+            const oldFace = asciiEl.innerText;
+
+            seat.isEating = true; seat.eaten++;
+            updateFullnessBar(seat);
+
+            const good = ["(☆▽☆) 此湯深得我心！", "(*´∀｀*) 一碗入魂！", "(๑´ڡ`๑) 湯頭絕了!", "( •̀ω•́ ) 職人之味"];
+            const ok = ["(・_・) 也行吧...", "(￣.￣) 嘛,有得吃", "(´・ω・`) 填飽肚子"];
+
+            bubble.style.opacity = "1";
+            bubble.innerText = wasTarget ? good[Math.floor(Math.random() * good.length)] : ok[Math.floor(Math.random() * ok.length)];
+            asciiEl.innerText = wasTarget ? "(≧▽≦)" : "(・ε・)";
+            if (wasTarget) seat.currentOrder = null;
+
+            setTimeout(() => {
+                // Clear counter slot
+                const slot = document.getElementById(`counter-${seat.id}`);
+
+                if (seat.eaten >= seat.capacity) {
+                    bubble.innerText = "(*ﾟ∀ﾟ) 飽了，多謝款待";
+                    setTimeout(() => {
+                        bubble.style.opacity = "0";
+                        asciiEl.innerText = "( _ _ )";
+                        asciiEl.classList.remove('customer-active');
+                        seat.active = false; seat.isEating = false;
+                        seat.currentOrder = null;
+                        updateFullnessBar(seat);
+                        slot.innerText = '[ 空 ]';
+                        slot.className = 'counter-slot';
+                    }, 1200);
+                } else {
+                    seat.isEating = false;
+                    asciiEl.innerText = oldFace;
+                    refreshBubble(seat);
+                    slot.innerText = '[ 等待 ]';
+                    slot.className = 'counter-slot counter-slot-active';
+                }
+            }, 1500);
+        }
+
+        function updateProxy(e) { proxy.style.left = e.clientX + 'px'; proxy.style.top = e.clientY + 'px'; }
+
+        function isOver(e, el) {
+            const r = el.getBoundingClientRect();
+            return e.clientX > r.left - 15 && e.clientX < r.right + 15 && e.clientY > r.top - 15 && e.clientY < r.bottom + 15;
+        }
+
+        init();
+    </script>
+</body>
+
+</html>

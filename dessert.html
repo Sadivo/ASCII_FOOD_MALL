@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>虛無堂 — 甜點店</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&family=Noto+Sans+TC:wght@400;900&display=swap');
+
+        body {
+            font-family: 'Courier Prime', 'Noto Sans TC', monospace;
+            background-color: #000;
+            color: #0f0;
+            touch-action: none;
+            user-select: none;
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        @keyframes titleShake {
+
+            0%,
+            100% {
+                transform: translateY(0);
+                color: #0f0;
+                text-shadow: 2px 2px #f59e0b;
+            }
+
+            25% {
+                transform: translateY(-3px);
+                color: #f59e0b;
+                text-shadow: 2px 2px #0f0;
+            }
+
+            50% {
+                transform: translateY(1px);
+                color: #0f0;
+                text-shadow: 2px 2px #f59e0b;
+            }
+
+            75% {
+                transform: translateY(-1px);
+                color: #f59e0b;
+                text-shadow: 2px 2px #0f0;
+            }
+        }
+
+        .page-title {
+            font-size: 1.4rem;
+            font-weight: 900;
+            animation: titleShake 1.2s steps(4) infinite;
+            letter-spacing: 1px;
+            padding: 12px 0;
+            text-align: center;
+            border-bottom: 2px double #0f0;
+            background: #000;
+        }
+
+        .shop-sign {
+            font-size: 10px;
+            color: #0f0;
+            text-align: center;
+            margin-top: 10px;
+            line-height: 1.2;
+            font-weight: bold;
+            white-space: pre;
+        }
+
+        .back-btn {
+            position: absolute;
+            left: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 11px;
+            color: #0f0;
+            cursor: pointer;
+            text-decoration: none;
+            border: 1px solid #0f0;
+            padding: 2px 8px;
+            z-index: 20;
+        }
+
+        .back-btn:hover {
+            color: #f59e0b;
+            border-color: #f59e0b;
+        }
+
+        .score-board {
+            font-size: 0.8rem;
+            padding: 5px 10px;
+            border-bottom: 1px double #0f0;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .customer-ascii {
+            font-size: 1.2rem;
+            color: #0f0;
+            opacity: 0.1;
+            transition: all 0.3s;
+        }
+
+        .customer-active {
+            opacity: 1;
+        }
+
+        .fullness-bar {
+            font-size: 8px;
+            color: #0c0;
+            margin-top: 2px;
+        }
+
+        .order-bubble {
+            position: absolute;
+            top: -50px;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 1px solid #fff;
+            color: #fff;
+            padding: 4px 10px;
+            font-size: 0.7rem;
+            opacity: 0;
+            background: #000;
+            z-index: 50;
+            white-space: nowrap;
+        }
+
+        .hint-text {
+            font-size: 13px;
+            color: #f59e0b;
+            text-align: center;
+            margin: 4px 0;
+            line-height: 1.4;
+            opacity: 0.8;
+        }
+
+        /* Counter bar */
+        .counter-bar {
+            border-top: 2px dashed #0f0;
+            border-bottom: 2px dashed #0f0;
+            height: 28px;
+            position: relative;
+            background: #020;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 8px;
+            opacity: 0.3;
+            overflow: hidden;
+        }
+
+        .border-ascii {
+            border: 1px solid #0f0;
+            position: relative;
+        }
+
+        .draggable-item {
+            cursor: pointer;
+            border: 1px solid #0f0;
+            padding: 4px 8px;
+            margin: 2px;
+            background: #000;
+            display: inline-block;
+            text-align: center;
+        }
+
+        .drag-proxy {
+            position: fixed;
+            pointer-events: none;
+            z-index: 9999;
+            border: 1px solid #ff0;
+            color: #ff0;
+            background: #000;
+            padding: 4px 12px;
+            display: none;
+            transform: translate(-50%, -50%);
+            font-weight: bold;
+        }
+
+        /* Plate / stacking area */
+        .plate-area {
+            width: 200px;
+            min-height: 180px;
+            border: 2px solid #0f0;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-end;
+            padding: 8px 4px;
+            position: relative;
+            background: #050505;
+        }
+
+        .stacked-item {
+            font-size: 12px;
+            padding: 2px 0;
+            text-align: center;
+            width: 100%;
+            animation: stackBounce 0.3s ease-out;
+        }
+
+        @keyframes stackBounce {
+            0% {
+                transform: translateY(-20px);
+                opacity: 0;
+            }
+
+            60% {
+                transform: translateY(3px);
+            }
+
+            100% {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .plate-base {
+            font-size: 11px;
+            color: #555;
+            text-align: center;
+            border-top: 1px solid #333;
+            padding-top: 4px;
+            width: 100%;
+        }
+
+        /* Beauty score display */
+        .beauty-score {
+            font-size: 10px;
+            text-align: center;
+            margin-top: 4px;
+            color: #f59e0b;
+        }
+
+        /* Sparkle animation */
+        .sparkle-float {
+            position: fixed;
+            pointer-events: none;
+            font-size: 14px;
+            color: #f59e0b;
+            z-index: 10000;
+            animation: sparkleUp 0.8s ease-out forwards;
+        }
+
+        @keyframes sparkleUp {
+            0% {
+                transform: translateY(0) scale(1);
+                opacity: 1;
+            }
+
+            100% {
+                transform: translateY(-40px) scale(1.5);
+                opacity: 0;
+            }
+        }
+    </style>
+</head>
+
+<body class="flex flex-col">
+
+    <div class="page-title relative">
+        <a href="index.html" class="back-btn">⬅ 大廳</a>
+        ~.:: 文字甜品店 ::.~
+    </div>
+
+    <div class="score-board">
+        <span>[ 積分: <span id="score-val">0000</span> ]</span>
+        <span>[ 出品: <span id="total-serve">00</span> ]</span>
+    </div>
+
+    <!-- Customer Area -->
+    <div class="flex flex-col justify-end bg-black">
+
+        <!-- 方框小招牌區 -->
+        <div id="random-shop-sign" class="shop-sign"></div>
+
+        <div class="flex justify-around items-end px-4 pb-4 mt-2">
+            <div id="seat-0" class="relative flex flex-col items-center">
+                <div class="order-bubble"></div>
+                <div class="customer-ascii">( _ _ )</div>
+                <div class="fullness-bar">[---------]</div>
+            </div>
+            <div id="seat-1" class="relative flex flex-col items-center">
+                <div class="order-bubble"></div>
+                <div class="customer-ascii">( _ _ )</div>
+                <div class="fullness-bar">[---------]</div>
+            </div>
+            <div id="seat-2" class="relative flex flex-col items-center">
+                <div class="order-bubble"></div>
+                <div class="customer-ascii">( _ _ )</div>
+                <div class="fullness-bar">[---------]</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Counter Bar -->
+    <div class="counter-bar">
+        ═══════════╬═══════════╬═══════════╬═══════════╬═══════════╬═══════════╬═══════════╬═══════════</div>
+
+    <div class="hint-text">
+        <div class="text-[#0f0]">【 虛無秘傳 】</div>
+        先選基底 → 疊上配料 → 加裝飾 → 出品！堆越高美感分越高<br>
+        <span class="text-[#ff4444]">!! 同樣配料不可重複！基底只能放一種 !!</span>
+    </div>
+
+    <div class="flex-1 flex items-start justify-center p-2 gap-4 mt-1">
+
+        <!-- Left: Base -->
+        <div class="flex flex-col items-center space-y-2">
+            <div class="border-ascii p-2 flex flex-col space-y-1">
+                <div class="text-[10px] text-center text-[#f59e0b]">【基底】</div>
+                <div class="draggable-item text-[11px]" data-type="base" data-val="鬆餅">🥞 鬆餅</div>
+                <div class="draggable-item text-[11px]" data-type="base" data-val="可麗餅">🌮 可麗餅</div>
+                <div class="draggable-item text-[11px]" data-type="base" data-val="銅鑼燒">🥮 銅鑼燒</div>
+            </div>
+
+            <div class="border-ascii p-2 flex flex-col space-y-1">
+                <div class="text-[10px] text-center text-[#f59e0b]">【配料】</div>
+                <div class="draggable-item text-[11px]" data-type="topping" data-val="鮮奶油">鮮奶油</div>
+                <div class="draggable-item text-[11px]" data-type="topping" data-val="草莓">🍓草莓</div>
+                <div class="draggable-item text-[11px]" data-type="topping" data-val="抹茶">🍵抹茶</div>
+                <div class="draggable-item text-[11px]" data-type="topping" data-val="紅豆">紅豆</div>
+                <div class="draggable-item text-[11px]" data-type="topping" data-val="冰淇淋">🍦冰淇淋</div>
+            </div>
+        </div>
+
+        <!-- Center: Plate (stacking) -->
+        <div class="flex flex-col items-center space-y-2">
+            <div id="drop-plate" class="plate-area">
+                <div class="plate-base">────[盤子]────</div>
+            </div>
+
+            <div class="beauty-score" id="beauty-display">美感: ☆☆☆☆☆</div>
+
+            <div id="target-serve"
+                class="border-ascii w-20 h-10 flex items-center justify-center text-[10px] cursor-pointer">
+                [[ 出品 ]]
+            </div>
+
+            <div id="clear-btn" class="text-[9px] text-[#555] cursor-pointer hover:text-[#f44]">
+                [ 清空重來 ]
+            </div>
+        </div>
+
+        <!-- Right: Decorations -->
+        <div class="flex flex-col items-center space-y-2">
+            <div class="border-ascii p-2 flex flex-col space-y-1">
+                <div class="text-[10px] text-center text-[#f59e0b]">【裝飾】</div>
+                <div class="draggable-item text-[11px]" data-type="deco" data-val="巧克力醬">🍫巧克力醬</div>
+                <div class="draggable-item text-[11px]" data-type="deco" data-val="糖粉">✨糖粉</div>
+                <div class="draggable-item text-[11px]" data-type="deco" data-val="薄荷葉">🌿薄荷葉</div>
+            </div>
+        </div>
+    </div>
+
+    <div id="drag-proxy" class="drag-proxy"></div>
+
+    <script>
+        const plate = document.getElementById('drop-plate');
+        const serveZone = document.getElementById('target-serve');
+        const clearBtn = document.getElementById('clear-btn');
+        const proxy = document.getElementById('drag-proxy');
+        const scoreEl = document.getElementById('score-val');
+        const serveCountEl = document.getElementById('total-serve');
+        const beautyEl = document.getElementById('beauty-display');
+
+        let score = 0, serveCount = 0, isDragging = false;
+        let dragInfo = { type: '', val: '' };
+
+        let stack = []; // { type, val, ascii }
+
+        const asciiMap = {
+            '鬆餅': '════════════',
+            '可麗餅': '╱──────────╲',
+            '銅鑼燒': '(══════════)',
+            '鮮奶油': '  ~~~奶油~~~  ',
+            '草莓': '   🍓🍓🍓   ',
+            '抹茶': '  .:抹茶粉:.  ',
+            '紅豆': '  ::紅豆餡::  ',
+            '冰淇淋': '    🍦🍦    ',
+            '巧克力醬': ' ~~巧克力~~ ',
+            '糖粉': '  ✨✨✨✨  ',
+            '薄荷葉': '   🌿🌿🌿   '
+        };
+
+        const signEl = document.getElementById('random-shop-sign');
+
+        const shopNames = [
+            "虛 無 堂 ‧ 本 店",
+            "幽 夢 ‧ 和 菓 子",
+            "無 常 甘 味 處",
+            "彼 岸 ‧ 甜 點 舖",
+            "極 樂 ‧ 菓 子 屋"
+        ];
+
+        const customerPool = [
+            "( ^_^ )", "( o_o )", "( >_< )", "( -_- )",
+            "( *_* )", "( @.@ )", "( ^ω^ )", "( •̀ω•́ )"
+        ];
+
+        let seats = [
+            { id: 0, active: false, currentOrder: null, eaten: 0, capacity: 3, isEating: false },
+            { id: 1, active: false, currentOrder: null, eaten: 0, capacity: 3, isEating: false },
+            { id: 2, active: false, currentOrder: null, eaten: 0, capacity: 3, isEating: false }
+        ];
+
+        function init() {
+            // 隨機店名招牌渲染
+            const randomName = shopNames[Math.floor(Math.random() * shopNames.length)];
+            const paddedName = ` ${randomName} `;
+            const borderLine = "+" + "-".repeat(16) + "+";
+            signEl.innerText = `${borderLine}\n|${paddedName}|\n${borderLine}`;
+
+            setupPointerEvents();
+            setInterval(manageSeats, 4000);
+
+            clearBtn.addEventListener('click', () => {
+                stack = [];
+                renderStack();
+                updateBeauty();
+            });
+
+            serveZone.addEventListener('click', serveDessert);
+        }
+
+        function renderStack() {
+            // Remove old stacked items
+            plate.querySelectorAll('.stacked-item').forEach(el => el.remove());
+            const plateBase = plate.querySelector('.plate-base');
+            // Render in reverse so latest item appears at top
+            for (let i = stack.length - 1; i >= 0; i--) {
+                const item = stack[i];
+                const div = document.createElement('div');
+                div.className = 'stacked-item';
+                div.innerText = item.ascii;
+                if (item.type === 'deco') div.style.color = '#f59e0b';
+                else if (item.type === 'base') div.style.color = '#c4863c';
+                else div.style.color = '#f0c0e0';
+                plate.insertBefore(div, plateBase);
+            }
+        }
+
+        function updateBeauty() {
+            let stars = 0;
+            if (stack.length === 0) { beautyEl.innerText = '美感: ☆☆☆☆☆'; return; }
+
+            const hasBase = stack.some(i => i.type === 'base');
+            const hasDeco = stack.some(i => i.type === 'deco');
+            const toppingCount = stack.filter(i => i.type === 'topping').length;
+
+            if (hasBase) stars++;
+            stars += Math.min(3, toppingCount);
+            if (hasDeco) stars++;
+
+            const filled = '★'.repeat(Math.min(5, stars));
+            const empty = '☆'.repeat(5 - Math.min(5, stars));
+            beautyEl.innerText = `美感: ${filled}${empty}`;
+        }
+
+        function serveDessert() {
+            if (stack.length === 0) return;
+
+            const hasBase = stack.some(i => i.type === 'base');
+            if (!hasBase) return; // need at least a base
+
+            let pts = 0;
+            const base = stack.find(i => i.type === 'base');
+            const toppings = stack.filter(i => i.type === 'topping');
+            const decos = stack.filter(i => i.type === 'deco');
+
+            // Base points
+            pts += 50;
+            pts += toppings.length * 40;
+            pts += decos.length * 30;
+
+            // Build name for matching
+            const name = base.val + (toppings.length > 0 ? '+' + toppings.map(t => t.val).join('+') : '');
+
+            // Sparkle effect
+            const rect = plate.getBoundingClientRect();
+            for (let i = 0; i < 3; i++) {
+                setTimeout(() => {
+                    const sp = document.createElement('div');
+                    sp.className = 'sparkle-float';
+                    sp.innerText = '★';
+                    sp.style.left = (rect.left + Math.random() * rect.width) + 'px';
+                    sp.style.top = (rect.top + Math.random() * rect.height * 0.5) + 'px';
+                    document.body.appendChild(sp);
+                    setTimeout(() => sp.remove(), 800);
+                }, i * 150);
+            }
+
+            // Check customer match
+            let matched = null;
+            seats.forEach(seat => {
+                if (seat.active && !seat.isEating && seat.currentOrder) {
+                    // Simple match: check if base matches
+                    if (seat.currentOrder.includes(base.val)) matched = seat;
+                }
+            });
+
+            if (matched) {
+                pts += 250;
+                eatDessert(matched, true);
+            } else {
+                const any = seats.find(s => s.active && !s.isEating);
+                if (any) { eatDessert(any, false); pts += 30; }
+            }
+
+            score += pts;
+            serveCount++;
+            scoreEl.innerText = String(score).padStart(4, '0');
+            serveCountEl.innerText = String(serveCount).padStart(2, '0');
+
+            stack = [];
+            renderStack();
+            updateBeauty();
+        }
+
+        function manageSeats() {
+            seats.forEach(seat => {
+                if (!seat.active && Math.random() > 0.4) {
+                    seat.active = true; seat.eaten = 0;
+                    seat.capacity = 2 + Math.floor(Math.random() * 3);
+                    const el = document.getElementById(`seat-${seat.id}`);
+                    el.querySelector('.customer-ascii').innerText = customerPool[Math.floor(Math.random() * customerPool.length)];
+                    el.querySelector('.customer-ascii').classList.add('customer-active');
+                    generateOrder(seat);
+                    updateFullnessBar(seat);
+                } else if (seat.active && !seat.isEating && !seat.currentOrder) {
+                    generateOrder(seat);
+                }
+            });
+        }
+
+        function generateOrder(seat) {
+            const bases = ['鬆餅', '可麗餅', '銅鑼燒'];
+            const tops = ['鮮奶油', '草莓', '抹茶', '紅豆', '冰淇淋'];
+            const b = bases[Math.floor(Math.random() * bases.length)];
+            const t = tops[Math.floor(Math.random() * tops.length)];
+            seat.currentOrder = b + '+' + t;
+            refreshBubble(seat);
+        }
+
+        function refreshBubble(seat) {
+            const el = document.getElementById(`seat-${seat.id}`);
+            const bubble = el.querySelector('.order-bubble');
+            if (seat.currentOrder) {
+                bubble.style.opacity = "1";
+                bubble.innerText = `[ ${seat.currentOrder} ]`;
+            } else {
+                bubble.style.opacity = "0";
+            }
+        }
+
+        function updateFullnessBar(seat) {
+            const el = document.getElementById(`seat-${seat.id}`);
+            const bar = el.querySelector('.fullness-bar');
+            if (!seat.active) { bar.innerText = "[---------]"; return; }
+            const filled = Math.min(9, Math.floor((seat.eaten / seat.capacity) * 9));
+            bar.innerText = "[" + "#".repeat(filled) + "-".repeat(9 - filled) + "]";
+        }
+
+        function eatDessert(seat, wasTarget) {
+            const el = document.getElementById(`seat-${seat.id}`);
+            const bubble = el.querySelector('.order-bubble');
+            const asciiEl = el.querySelector('.customer-ascii');
+            const oldFace = asciiEl.innerText;
+            seat.isEating = true; seat.eaten++;
+            updateFullnessBar(seat);
+
+            const good = ["(☆▽☆) 好幸福！", "(*´∀｀*) 甜到心坎!", "(๑´ڡ`๑) 美味虛無!", "( •̀ω•́ ) 藝術品！"];
+            const ok = ["(・_・) 還可以啦", "(￣.￣) 不是我要的但行", "(´・ω・`) 甜就好"];
+
+            bubble.style.opacity = "1";
+            bubble.innerText = wasTarget ? good[Math.floor(Math.random() * good.length)] : ok[Math.floor(Math.random() * ok.length)];
+            asciiEl.innerText = wasTarget ? "(≧▽≦)" : "(・ε・)";
+            if (wasTarget) seat.currentOrder = null;
+
+            setTimeout(() => {
+                if (seat.eaten >= seat.capacity) {
+                    bubble.innerText = "(*ﾟ∀ﾟ) 吃飽了～感謝";
+                    setTimeout(() => {
+                        bubble.style.opacity = "0";
+                        asciiEl.innerText = "( _ _ )";
+                        asciiEl.classList.remove('customer-active');
+                        seat.active = false; seat.isEating = false;
+                        updateFullnessBar(seat);
+                    }, 1200);
+                } else {
+                    seat.isEating = false;
+                    asciiEl.innerText = oldFace;
+                    refreshBubble(seat);
+                }
+            }, 1200);
+        }
+
+        function setupPointerEvents() {
+            document.addEventListener('pointerdown', (e) => {
+                const target = e.target.closest('.draggable-item');
+                if (!target) return;
+                isDragging = true;
+                target.releasePointerCapture(e.pointerId);
+                dragInfo = { type: target.getAttribute('data-type'), val: target.getAttribute('data-val') };
+                proxy.style.display = 'block';
+                proxy.innerText = `[ ${dragInfo.val} ]`;
+                updateProxy(e);
+            });
+
+            window.addEventListener('pointermove', (e) => {
+                if (!isDragging) return;
+                updateProxy(e);
+            });
+
+            window.addEventListener('pointerup', (e) => {
+                if (!isDragging) return;
+                isDragging = false;
+                proxy.style.display = 'none';
+
+                if (isOver(e, plate)) {
+                    handleDrop(dragInfo);
+                } else if (isOver(e, serveZone)) {
+                    serveDessert();
+                }
+            });
+        }
+
+        function handleDrop(info) {
+            // Prevent duplicate toppings/decos
+            if ((info.type === 'topping' || info.type === 'deco') && stack.some(i => i.val === info.val)) return;
+            // Only one base
+            if (info.type === 'base' && stack.some(i => i.type === 'base')) return;
+            // Base must be first
+            if (info.type !== 'base' && !stack.some(i => i.type === 'base')) return;
+            // Max 6 layers
+            if (stack.length >= 6) return;
+
+            stack.push({ type: info.type, val: info.val, ascii: asciiMap[info.val] || info.val });
+            renderStack();
+            updateBeauty();
+        }
+
+        function updateProxy(e) { proxy.style.left = e.clientX + 'px'; proxy.style.top = e.clientY + 'px'; }
+
+        function isOver(e, el) {
+            const r = el.getBoundingClientRect();
+            return e.clientX > r.left - 20 && e.clientX < r.right + 20 && e.clientY > r.top - 20 && e.clientY < r.bottom + 20;
+        }
+
+        init();
+    </script>
+</body>
+
+</html>
